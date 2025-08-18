@@ -1,0 +1,133 @@
+const categoriesMock = [
+  // Expense Categories
+  {
+    id: "food-dining",
+    name: "Food & Dining",
+    icon: "restaurant",
+    background: "#FF5722",
+    type: "expense",
+  },
+  {
+    id: "transportation",
+    name: "Transportation",
+    icon: "car",
+    background: "#2196F3",
+    type: "expense",
+  },
+  {
+    id: "entertainment",
+    name: "Entertainment",
+    icon: "videocamera",
+    background: "#9C27B0",
+    type: "expense",
+  },
+  {
+    id: "shopping",
+    name: "Shopping",
+    icon: "shoppingcart",
+    background: "#E91E63",
+    type: "expense",
+  },
+  {
+    id: "bills-utilities",
+    name: "Bills & Utilities",
+    icon: "filetext1",
+    background: "#FF9800",
+    type: "expense",
+  },
+  {
+    id: "healthcare",
+    name: "Healthcare",
+    icon: "pluscircle",
+    background: "#F44336",
+    type: "expense",
+  },
+  {
+    id: "education",
+    name: "Education",
+    icon: "book",
+    background: "#607D8B",
+    type: "expense",
+  },
+  {
+    id: "housing",
+    name: "Housing",
+    icon: "home",
+    background: "#795548",
+    type: "expense",
+  },
+  {
+    id: "insurance",
+    name: "Insurance",
+    icon: "safety",
+    background: "#3F51B5",
+    type: "expense",
+  },
+  {
+    id: "personal-care",
+    name: "Personal Care",
+    icon: "user",
+    background: "#FFC107",
+    type: "expense",
+  },
+  {
+    id: "travel",
+    name: "Travel",
+    icon: "airplane",
+    background: "#00BCD4",
+    type: "expense",
+  },
+  {
+    id: "gifts",
+    name: "Gifts",
+    icon: "gift",
+    background: "#8BC34A",
+    type: "expense",
+  },
+
+  // Income Categories
+  {
+    id: "salary",
+    name: "Salary",
+    icon: "wallet",
+    background: "#4CAF50",
+    type: "income",
+  },
+  {
+    id: "freelance",
+    name: "Freelance",
+    icon: "laptop",
+    background: "#009688",
+    type: "income",
+  },
+  {
+    id: "investments",
+    name: "Investments",
+    icon: "barschart",
+    background: "#FFEB3B",
+    type: "income",
+  },
+  {
+    id: "business",
+    name: "Business",
+    icon: "briefcase",
+    background: "#673AB7",
+    type: "income",
+  },
+  {
+    id: "rental",
+    name: "Rental Income",
+    icon: "home-city",
+    background: "#3F51B5",
+    type: "income",
+  },
+  {
+    id: "other-income",
+    name: "Other Income",
+    icon: "plus-circle",
+    background: "#795548",
+    type: "income",
+  },
+];
+
+export default categoriesMock;
