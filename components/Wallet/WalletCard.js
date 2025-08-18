@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 20,
-    backgroundColor: wallet.background + "20",
+    backgroundColor: COLORS.input,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,

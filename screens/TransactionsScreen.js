@@ -2,13 +2,16 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "../constants/colors";
 import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TransactionsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Transactions</Text>
-      <Text style={styles.subtitle}>Manage your income and expenses</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Transactions</Text>
+        <Text style={styles.subtitle}>Manage your income and expenses</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -16,6 +19,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  content: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 20,

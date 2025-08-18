@@ -1,4 +1,4 @@
-import { WALLET_TYPE } from "../constants/walletTypes";
+import { WALLET_TYPE } from "../constants/Types/walletTypes";
 
 class Wallet {
   constructor({

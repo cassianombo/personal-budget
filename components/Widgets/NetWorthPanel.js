@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "../../constants/colors";
 import { Title } from "../UI";
-import { formatCurrency } from "../../utils/helpers";
 
 const NetWorthPanel = ({ value, totalWallets = 0 }) => {
   return (
@@ -14,7 +13,12 @@ const NetWorthPanel = ({ value, totalWallets = 0 }) => {
         </View>
       </View>
 
-      <Text style={styles.balanceText}>{formatCurrency(value)}</Text>
+      <Text style={styles.balanceText}>
+        {new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(value || 0)}
+      </Text>
 
       <View style={styles.statsContainer}>
         <Text style={styles.accountInfo}>
