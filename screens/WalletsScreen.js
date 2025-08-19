@@ -1,13 +1,15 @@
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { Button, IconButton } from "../components/UI";
+import { Button, Header } from "../components/UI";
 import React, { useState } from "react";
+import { useDeleteWallet, useWallets } from "../services/useDatabase";
 
 import AddWalletModal from "../components/Wallet/AddWalletModal";
 import { COLORS } from "../constants/colors";
@@ -15,11 +17,11 @@ import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WalletItem from "../components/Wallet/WalletItem";
 import { formatCurrency } from "../utils/helpers";
-import { useWallets } from "../services/useDatabase";
 
 const WalletsScreen = ({ navigation }) => {
   const { data: wallets = [], isLoading, error, refetch } = useWallets();
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
+  const deleteWalletMutation = useDeleteWallet();
 
   const totalBalance = wallets.reduce(
     (sum, wallet) => sum + (wallet.balance || 0),
@@ -32,20 +34,35 @@ const WalletsScreen = ({ navigation }) => {
     setShowAddWalletModal(true);
   };
 
+  const handleDeleteWallet = async (walletId) => {
+    try {
+      await deleteWalletMutation.mutateAsync(walletId);
+      // The query will automatically refresh due to the mutation
+    } catch (error) {
+      // Show user-friendly error message
+      let errorMessage = "Failed to delete wallet. Please try again.";
+
+      if (error.message === "Cannot delete wallet with existing transactions") {
+        errorMessage =
+          "Cannot delete wallet that has transactions. Please delete all transactions first or transfer them to another wallet.";
+      } else if (error.message === "Wallet not found") {
+        errorMessage = "Wallet not found. It may have been deleted already.";
+      }
+
+      Alert.alert("Error", errorMessage);
+      console.error("Failed to delete wallet:", error);
+    }
+  };
+
+  const handleEditWallet = (wallet) => {
+    // TODO: Navigate to edit wallet screen
+    console.log("Edit wallet:", wallet.id);
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <IconButton
-            icon="left"
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          />
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Wallets</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header title="Wallets" onBack={() => navigation.goBack()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading wallets...</Text>
@@ -57,17 +74,7 @@ const WalletsScreen = ({ navigation }) => {
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <IconButton
-            icon="left"
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          />
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Wallets</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header title="Wallets" onBack={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
           <Icon name="exclamationcircle" size={48} color={COLORS.error} />
           <Text style={styles.errorTitle}>Error Loading Wallets</Text>
@@ -80,19 +87,11 @@ const WalletsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <IconButton
-          icon="left"
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        />
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Wallets</Text>
-        </View>
-        <Pressable style={styles.headerButton} onPress={handleAddWallet}>
-          <Icon name="plus" size={20} color={COLORS.text} />
-        </Pressable>
-      </View>
+      <Header
+        title="Wallets"
+        onBack={() => navigation.goBack()}
+        actions={[{ variant: "add", onPress: handleAddWallet }]}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Summary Section */}
@@ -160,7 +159,11 @@ const WalletsScreen = ({ navigation }) => {
                 <View key={wallet.id}>
                   <WalletItem
                     wallet={wallet}
-                    onPress={() => console.log("Wallet pressed:", wallet.name)}
+                    onPress={() =>
+                      navigation.navigate("WalletDetail", { wallet })
+                    }
+                    onDelete={() => handleDeleteWallet(wallet.id)}
+                    onEdit={() => handleEditWallet(wallet)}
                   />
 
                   {index < wallets.length - 1 && (
@@ -189,43 +192,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-    backgroundColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.text,
-    letterSpacing: -0.2,
-  },
 
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: COLORS.card,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  placeholder: {
-    width: 40,
-  },
   content: {
     flex: 1,
     padding: 20,

@@ -57,6 +57,9 @@ const WalletList = ({
         {showHeader && (
           <View style={styles.header}>
             <Text style={styles.title}>Wallets</Text>
+            <Pressable onPress={onViewAll} style={styles.viewAllButton}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </Pressable>
           </View>
         )}
         <View style={styles.emptyContainer}>
@@ -71,11 +74,10 @@ const WalletList = ({
       {showHeader && (
         <View style={styles.header}>
           <Text style={styles.title}>Wallets</Text>
-          {validWallets.length > maxVisible && (
-            <Pressable onPress={onViewAll} style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </Pressable>
-          )}
+
+          <Pressable onPress={onViewAll} style={styles.viewAllButton}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </Pressable>
         </View>
       )}
 

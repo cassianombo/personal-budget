@@ -16,7 +16,7 @@ const NetWorthPanel = ({ value, totalWallets = 0 }) => {
       <Text style={styles.balanceText}>
         {new Intl.NumberFormat("en-US", {
           style: "currency",
-          currency: "USD",
+          currency: "EUR",
         }).format(value || 0)}
       </Text>
 

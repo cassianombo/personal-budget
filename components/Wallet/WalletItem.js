@@ -1,18 +1,55 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "../../constants/colors";
 import Icon from "../UI/Icon";
 import React from "react";
+import { Swipeable } from "react-native-gesture-handler";
 import { formatCurrency } from "../../utils/helpers";
 
-const WalletItem = ({ wallet, onPress }) => {
+const WalletItem = ({ wallet, onPress, onDelete, onEdit }) => {
   const getBalanceColor = (balance) => {
     if (balance > 0) return COLORS.income;
     if (balance < 0) return COLORS.error;
     return COLORS.text;
   };
 
-  return (
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Wallet",
+      `Are you sure you want to delete "${wallet.name}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => onDelete && onDelete(wallet.id),
+        },
+      ]
+    );
+  };
+
+  const renderRightActions = () => {
+    return (
+      <View style={styles.swipeActions}>
+        {onEdit && (
+          <Pressable
+            style={[styles.swipeAction, styles.editAction]}
+            onPress={() => onEdit(wallet)}>
+            <Icon name="edit" size={20} color={COLORS.text} />
+          </Pressable>
+        )}
+        {onDelete && (
+          <Pressable
+            style={[styles.swipeAction, styles.deleteAction]}
+            onPress={handleDelete}>
+            <Icon name="delete" size={20} color={COLORS.text} />
+          </Pressable>
+        )}
+      </View>
+    );
+  };
+
+  const walletContent = (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
@@ -62,6 +99,21 @@ const WalletItem = ({ wallet, onPress }) => {
       </View>
     </Pressable>
   );
+
+  // If no swipe actions, return regular content
+  if (!onDelete && !onEdit) {
+    return walletContent;
+  }
+
+  // Return swipeable content
+  return (
+    <Swipeable
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+      overshootRight={false}>
+      {walletContent}
+    </Swipeable>
+  );
 };
 
 export default WalletItem;
@@ -103,18 +155,35 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.text,
     marginBottom: 2,
-    letterSpacing: -0.2,
   },
   walletType: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textSecondary,
     textTransform: "capitalize",
-    fontWeight: "400",
   },
   balanceText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     textAlign: "right",
-    letterSpacing: -0.2,
+  },
+  swipeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingRight: 20,
+  },
+  swipeAction: {
+    width: 60,
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+    borderRadius: 12,
+  },
+  editAction: {
+    backgroundColor: COLORS.primary,
+  },
+  deleteAction: {
+    backgroundColor: COLORS.error,
   },
 });

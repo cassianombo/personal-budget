@@ -69,12 +69,7 @@ export default function HomeScreen({ navigation }) {
           isLoading={walletsLoading}
           onViewAll={() => navigation.navigate("Wallets")}
           onWalletPress={(wallet) =>
-            console.log(
-              "Wallet selected:",
-              wallet.name,
-              "Balance:",
-              wallet.balance
-            )
+            navigation.navigate("WalletDetail", { wallet })
           }
         />
       </ScrollView>
