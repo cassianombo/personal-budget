@@ -1,58 +1,114 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { COLORS } from "../../constants/colors";
-import Icon from "../UI/Icon";
-import { Title } from "../UI";
+import React from "react";
+import WalletItem from "./WalletItem";
 
-const WalletList = ({ wallets = [], onViewAll }) => {
-  // Ensure wallets is an array and has valid data
+const WalletList = ({
+  wallets = [],
+  onViewAll,
+  onWalletPress,
+  isLoading = false,
+  showHeader = true,
+}) => {
+  const maxVisible = 2;
   const validWallets = Array.isArray(wallets)
     ? wallets.filter((wallet) => wallet && wallet.id)
     : [];
-  const maxVisibleWallets = 2;
-  const visibleWallets = validWallets.slice(0, maxVisibleWallets);
-  const hasMoreWallets = validWallets.length > maxVisibleWallets;
+
+  const visibleWallets = validWallets.slice(0, maxVisible);
+  const hasMoreWallets = validWallets.length > maxVisible;
+  const remainingCount = validWallets.length - maxVisible;
+
+  const handleWalletPress = (wallet) => {
+    if (onWalletPress) {
+      onWalletPress(wallet);
+    } else {
+      console.log("Wallet pressed:", wallet.name);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        {showHeader && (
+          <View style={styles.header}>
+            <Text style={styles.title}>Wallets</Text>
+          </View>
+        )}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={COLORS.textSecondary} />
+        </View>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (validWallets.length === 0) {
+    return (
+      <View style={styles.container}>
+        {showHeader && (
+          <View style={styles.header}>
+            <Text style={styles.title}>Wallets</Text>
+          </View>
+        )}
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No wallets added yet</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Title>Wallets</Title>
-        {hasMoreWallets && (
-          <Pressable onPress={onViewAll} style={styles.viewAllButton}>
-            <Text style={styles.viewAll}>View All</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {visibleWallets.map((wallet, index) => (
-        <View key={wallet.id} style={styles.walletsContainer}>
-          {index > 0 && <View style={styles.divider} />}
-          {/* <WalletItem wallet={wallet} onPress={() => {}} /> */}
-        </View>
-      ))}
-
-      {hasMoreWallets && (
-        <View style={styles.walletsContainer}>
-          <View style={styles.divider} />
-          <Pressable
-            onPress={onViewAll}
-            style={({ pressed }) => [
-              styles.moreWalletsButton,
-              pressed && styles.pressed,
-            ]}>
-            <View style={styles.moreWalletsContent}>
-              <View style={styles.moreIcon}>
-                <Icon name="ellipsis1" size={20} color={COLORS.textSecondary} />
-              </View>
-              <Text style={styles.moreText}>
-                View {validWallets.length - maxVisibleWallets} more wallet
-                {validWallets.length - maxVisibleWallets !== 1 ? "s" : ""}
-              </Text>
-              <Icon name="right" size={16} color={COLORS.textSecondary} />
-            </View>
-          </Pressable>
+      {showHeader && (
+        <View style={styles.header}>
+          <Text style={styles.title}>Wallets</Text>
+          {validWallets.length > maxVisible && (
+            <Pressable onPress={onViewAll} style={styles.viewAllButton}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </Pressable>
+          )}
         </View>
       )}
+
+      <View style={styles.walletsList}>
+        {visibleWallets.map((wallet, index) => (
+          <View key={wallet.id}>
+            <WalletItem
+              wallet={wallet}
+              onPress={() => handleWalletPress(wallet)}
+            />
+            {index < visibleWallets.length - 1 && (
+              <View style={styles.separator} />
+            )}
+          </View>
+        ))}
+
+        {hasMoreWallets && (
+          <>
+            <View style={styles.separator} />
+            <Pressable
+              onPress={onViewAll}
+              style={({ pressed }) => [
+                styles.moreButton,
+                pressed && styles.moreButtonPressed,
+              ]}>
+              <Text style={styles.moreButtonText}>
+                View more {remainingCount} wallet
+                {remainingCount !== 1 ? "s" : ""}
+              </Text>
+            </Pressable>
+          </>
+        )}
+      </View>
     </View>
   );
 };
@@ -61,68 +117,69 @@ export default WalletList;
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: "stretch",
-    padding: 16,
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    backgroundColor: COLORS.card,
-  },
-  walletsContainer: {
-    marginHorizontal: -16,
-    marginBottom: -16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginTop: 8,
-    marginBottom: -8,
-    marginHorizontal: 16,
+    borderColor: COLORS.border,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 4,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text,
+    letterSpacing: -0.3,
   },
   viewAllButton: {
-    padding: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  viewAll: {
-    color: COLORS.primary,
+  viewAllText: {
     fontSize: 14,
     fontWeight: "500",
+    color: COLORS.primary,
   },
-  moreWalletsButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+  walletsList: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  pressed: {
-    opacity: 0.7,
+  separator: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 0,
   },
-  moreWalletsContent: {
-    flexDirection: "row",
+  // Loading state
+  loadingContainer: {
     alignItems: "center",
-    justifyContent: "space-between",
+    paddingVertical: 32,
   },
-  moreIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
+  // Empty state
+  emptyContainer: {
     alignItems: "center",
-    marginRight: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
   },
-  moreText: {
-    flex: 1,
-    fontSize: 16,
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: "400",
+  },
+  // More button
+  moreButton: {
+    paddingTop: 16,
+    alignItems: "center",
+  },
+  moreButtonPressed: {
+    opacity: 0.6,
+  },
+  moreButtonText: {
+    fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: "500",
   },

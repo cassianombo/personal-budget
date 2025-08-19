@@ -31,7 +31,7 @@ export const WALLET_TYPE_METADATA = {
   [WALLET_TYPE.CASH]: {
     label: "Cash",
     color: COLORS.walletCash,
-    icon: "dollar",
+    icon: "wallet",
     description: "Physical cash",
   },
 };

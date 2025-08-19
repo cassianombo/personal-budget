@@ -5,9 +5,9 @@ export const WALLET_ICONS = [
   { name: "bank", label: "Bank" },
   { name: "creditcard", label: "Credit Card" },
   { name: "wallet", label: "Wallet" },
-  { name: "dollar", label: "Dollar" },
-  { name: "home", label: "Home" },
-  { name: "star", label: "Star" },
+  { name: "lock", label: "Lock" },
+  { name: "gift", label: "Savings" },
+  { name: "Trophy", label: "Goals" },
 ];
 
 // Available background colors for wallets (exactly 6 options)

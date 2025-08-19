@@ -7,12 +7,14 @@ import {
 } from "react-native";
 import { useTotalBalance, useWallets } from "../services/useDatabase";
 
+import { AntDesign } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
 import NetWorthPanel from "../components/Widgets/NetWorthPanel";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import WalletList from "../components/Wallet/WalletList";
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const {
     data: totalBalance,
     isLoading: balanceLoading,
@@ -62,24 +64,19 @@ export default function HomeScreen() {
           totalWallets={wallets?.length || 0}
         />
 
-        <View style={styles.quickStats}>
-          <Text style={styles.sectionTitle}>Quick Stats</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{wallets?.length || 0}</Text>
-              <Text style={styles.statLabel}>Wallets</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(totalBalance || 0)}
-              </Text>
-              <Text style={styles.statLabel}>Total Balance</Text>
-            </View>
-          </View>
-        </View>
+        <WalletList
+          wallets={wallets || []}
+          isLoading={walletsLoading}
+          onViewAll={() => navigation.navigate("Wallets")}
+          onWalletPress={(wallet) =>
+            console.log(
+              "Wallet selected:",
+              wallet.name,
+              "Balance:",
+              wallet.balance
+            )
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );

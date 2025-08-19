@@ -1,51 +1,19 @@
+import categoriesMock from "../constants/categoriesMock";
 import databaseService from "./DatabaseService";
 import { generateId } from "../utils/generateId";
 
-// Sample data for seeding the database
-const sampleCategories = [
-  {
-    id: generateId(),
-    name: "Food & Dining",
-    icon: "restaurant",
-    background: "#FF6B6B",
-    type: "expense",
-  },
-  {
-    id: generateId(),
-    name: "Transportation",
-    icon: "car",
-    background: "#4ECDC4",
-    type: "expense",
-  },
-  {
-    id: generateId(),
-    name: "Shopping",
-    icon: "shopping-cart",
-    background: "#45B7D1",
-    type: "expense",
-  },
-  {
-    id: generateId(),
-    name: "Salary",
-    icon: "dollar-sign",
-    background: "#96CEB4",
-    type: "income",
-  },
-  {
-    id: generateId(),
-    name: "Investment",
-    icon: "trending-up",
-    background: "#FFEAA7",
-    type: "income",
-  },
-];
+// Sample data for seeding the database - using categoriesMock
+const sampleCategories = categoriesMock.map((category) => ({
+  ...category,
+  id: generateId(), // Generate new unique ID for database
+}));
 
 const sampleWallets = [
   {
     id: generateId(),
     name: "Main Checking",
     balance: 2500.0,
-    icon: "credit-card",
+    icon: "creditcard",
     background: "#6C5CE7",
     type: "debit",
   },
@@ -53,7 +21,7 @@ const sampleWallets = [
     id: generateId(),
     name: "Savings Account",
     balance: 15000.0,
-    icon: "piggy-bank",
+    icon: "wallet",
     background: "#00B894",
     type: "debit",
   },
@@ -61,7 +29,7 @@ const sampleWallets = [
     id: generateId(),
     name: "Credit Card",
     balance: -450.0,
-    icon: "credit-card",
+    icon: "home",
     background: "#E17055",
     type: "credit",
   },
@@ -69,7 +37,7 @@ const sampleWallets = [
     id: generateId(),
     name: "Cash Wallet",
     balance: 120.0,
-    icon: "dollar-sign",
+    icon: "star",
     background: "#FDCB6E",
     type: "cash",
   },
@@ -122,6 +90,16 @@ export const seedDatabase = async () => {
         },
         {
           id: generateId(),
+          amount: -35.0,
+          categoryId: categories.find((c) => c.name === "Transportation")?.id,
+          walletId: wallets.find((w) => w.name === "Main Checking")?.id,
+          date: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+          title: "Gas Station",
+          description: "Weekly fuel",
+          type: "expense",
+        },
+        {
+          id: generateId(),
           amount: -120.0,
           categoryId: categories.find((c) => c.name === "Shopping")?.id,
           walletId: wallets.find((w) => w.name === "Credit Card")?.id,
@@ -132,12 +110,43 @@ export const seedDatabase = async () => {
         },
         {
           id: generateId(),
+          amount: -80.0,
+          categoryId: categories.find((c) => c.name === "Entertainment")?.id,
+          walletId: wallets.find((w) => w.name === "Credit Card")?.id,
+          date: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+          title: "Movie Night",
+          description: "Cinema tickets and snacks",
+          type: "expense",
+        },
+        {
+          id: generateId(),
+          amount: -200.0,
+          categoryId: categories.find((c) => c.name === "Bills & Utilities")
+            ?.id,
+          walletId: wallets.find((w) => w.name === "Main Checking")?.id,
+          date: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+          title: "Electricity Bill",
+          description: "Monthly utility payment",
+          type: "expense",
+        },
+        {
+          id: generateId(),
           amount: 3500.0,
           categoryId: categories.find((c) => c.name === "Salary")?.id,
           walletId: wallets.find((w) => w.name === "Main Checking")?.id,
           date: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
           title: "Monthly Salary",
           description: "Salary deposit",
+          type: "income",
+        },
+        {
+          id: generateId(),
+          amount: 500.0,
+          categoryId: categories.find((c) => c.name === "Freelance")?.id,
+          walletId: wallets.find((w) => w.name === "Main Checking")?.id,
+          date: new Date(now - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+          title: "Freelance Project",
+          description: "Web development project",
           type: "income",
         },
         {

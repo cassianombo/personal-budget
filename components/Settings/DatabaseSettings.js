@@ -1,5 +1,5 @@
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Button, Title } from "../UI";
+import { Button, Icon, Title } from "../UI";
 import React, { useState } from "react";
 import {
   clearDatabase,
@@ -10,6 +10,7 @@ import {
   useCategories,
   useDatabaseInitialization,
   useTotalBalance,
+  useTransactions,
   useWallets,
 } from "../../services/useDatabase";
 
@@ -27,6 +28,8 @@ const DatabaseSettings = () => {
   const { data: wallets, refetch: refetchWallets } = useWallets();
   const { data: categories, refetch: refetchCategories } = useCategories();
   const { data: totalBalance, refetch: refetchBalance } = useTotalBalance();
+  const { data: transactions, refetch: refetchTransactions } =
+    useTransactions();
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
@@ -38,6 +41,7 @@ const DatabaseSettings = () => {
         refetchWallets();
         refetchCategories();
         refetchBalance();
+        refetchTransactions();
       } else {
         Alert.alert("Error", result.message);
       }
@@ -67,6 +71,7 @@ const DatabaseSettings = () => {
                 refetchWallets();
                 refetchCategories();
                 refetchBalance();
+                refetchTransactions();
               } else {
                 Alert.alert("Error", result.message);
               }
@@ -181,21 +186,62 @@ Total Balance: $${stats.totalBalance?.toFixed(2) || "0.00"}`;
       </View>
 
       {/* Data Preview */}
-      {(wallets?.length > 0 || categories?.length > 0) && (
+      {(wallets?.length > 0 ||
+        categories?.length > 0 ||
+        transactions?.length > 0) && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Data Preview</Text>
+          <View style={styles.previewHeader}>
+            <Icon name="eye" size={20} color={COLORS.primary} />
+            <Text style={styles.cardTitle}>Data Preview</Text>
+          </View>
+          <Text style={styles.cardDescription}>
+            Preview of your stored data
+          </Text>
 
           {wallets && wallets.length > 0 && (
             <View style={styles.previewSection}>
-              <Text style={styles.previewTitle}>Wallets</Text>
-              {wallets.slice(0, 3).map((wallet) => (
-                <Text key={wallet.id} style={styles.previewItem}>
-                  • {wallet.name}: ${wallet.balance?.toFixed(2)}
+              <View style={styles.previewSectionHeader}>
+                <Icon name="creditcard" size={16} color={COLORS.primary} />
+                <Text style={styles.previewTitle}>
+                  Wallets ({wallets.length})
                 </Text>
+              </View>
+              {wallets.slice(0, 4).map((wallet) => (
+                <View key={wallet.id} style={styles.previewItemContainer}>
+                  <View style={styles.previewItemLeft}>
+                    <View
+                      style={[
+                        styles.previewItemIcon,
+                        {
+                          backgroundColor: wallet.background || COLORS.primary,
+                        },
+                      ]}>
+                      <Icon
+                        name={wallet.icon || "wallet"}
+                        size={12}
+                        color={COLORS.text}
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.previewItemName}>{wallet.name}</Text>
+                      <Text style={styles.previewItemType}>{wallet.type}</Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.previewItemBalance,
+                      {
+                        color:
+                          wallet.balance >= 0 ? COLORS.income : COLORS.error,
+                      },
+                    ]}>
+                    ${wallet.balance?.toFixed(2)}
+                  </Text>
+                </View>
               ))}
-              {wallets.length > 3 && (
+              {wallets.length > 4 && (
                 <Text style={styles.previewMore}>
-                  +{wallets.length - 3} more...
+                  +{wallets.length - 4} more wallets
                 </Text>
               )}
             </View>
@@ -203,15 +249,123 @@ Total Balance: $${stats.totalBalance?.toFixed(2) || "0.00"}`;
 
           {categories && categories.length > 0 && (
             <View style={styles.previewSection}>
-              <Text style={styles.previewTitle}>Categories</Text>
-              {categories.slice(0, 3).map((category) => (
-                <Text key={category.id} style={styles.previewItem}>
-                  • {category.name} ({category.type})
+              <View style={styles.previewSectionHeader}>
+                <Icon name="tags" size={16} color={COLORS.secondary} />
+                <Text style={styles.previewTitle}>
+                  Categories ({categories.length})
                 </Text>
-              ))}
-              {categories.length > 3 && (
+              </View>
+              <View style={styles.categoriesGrid}>
+                {categories.slice(0, 6).map((category) => (
+                  <View key={category.id} style={styles.categoryChip}>
+                    <View
+                      style={[
+                        styles.categoryChipIcon,
+                        {
+                          backgroundColor:
+                            category.background || COLORS.secondary,
+                        },
+                      ]}>
+                      <Icon
+                        name={
+                          category.icon ||
+                          (category.type === "income" ? "plus" : "minus")
+                        }
+                        size={10}
+                        color={COLORS.text}
+                      />
+                    </View>
+                    <Text style={styles.categoryChipText}>{category.name}</Text>
+                    <Text style={styles.categoryChipType}>
+                      {category.type === "income" ? "↗" : "↘"}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              {categories.length > 6 && (
                 <Text style={styles.previewMore}>
-                  +{categories.length - 3} more...
+                  +{categories.length - 6} more categories
+                </Text>
+              )}
+            </View>
+          )}
+
+          {transactions && transactions.length > 0 && (
+            <View style={styles.previewSection}>
+              <View style={styles.previewSectionHeader}>
+                <Icon name="swap" size={16} color={COLORS.accent} />
+                <Text style={styles.previewTitle}>
+                  Recent Transactions ({transactions.length})
+                </Text>
+              </View>
+              {transactions.slice(0, 3).map((transaction) => (
+                <View key={transaction.id} style={styles.transactionItem}>
+                  <View style={styles.transactionLeft}>
+                    <View
+                      style={[
+                        styles.transactionIcon,
+                        {
+                          backgroundColor:
+                            transaction.type === "income"
+                              ? COLORS.income + "20"
+                              : transaction.type === "transfer"
+                              ? COLORS.primary + "20"
+                              : COLORS.error + "20",
+                        },
+                      ]}>
+                      <Icon
+                        name={
+                          transaction.type === "income"
+                            ? "plus"
+                            : transaction.type === "transfer"
+                            ? "swap"
+                            : "minus"
+                        }
+                        size={12}
+                        color={
+                          transaction.type === "income"
+                            ? COLORS.income
+                            : transaction.type === "transfer"
+                            ? COLORS.primary
+                            : COLORS.error
+                        }
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.transactionTitle}>
+                        {transaction.title}
+                      </Text>
+                      <Text style={styles.transactionDetails}>
+                        {transaction.walletName}
+                        {transaction.categoryName &&
+                          ` • ${transaction.categoryName}`}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.transactionAmount,
+                      {
+                        color:
+                          transaction.type === "income"
+                            ? COLORS.income
+                            : transaction.type === "transfer"
+                            ? COLORS.primary
+                            : COLORS.error,
+                      },
+                    ]}>
+                    {transaction.type === "income"
+                      ? "+"
+                      : transaction.type === "transfer"
+                      ? "→"
+                      : ""}
+                    ${Math.abs(transaction.amount).toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+              {transactions.length > 3 && (
+                <Text style={styles.previewMore}>
+                  +{transactions.length - 3} more transactions
                 </Text>
               )}
             </View>
@@ -285,27 +439,144 @@ const styles = StyleSheet.create({
   buttonContainer: {
     gap: 12,
   },
+  previewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   previewSection: {
-    marginTop: 16,
+    marginTop: 20,
+  },
+  previewSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
   },
   previewTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
     color: COLORS.text,
-    marginBottom: 8,
   },
-  previewItem: {
+  previewItemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  previewItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  previewItemIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewItemName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: COLORS.text,
+  },
+  previewItemType: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginBottom: 4,
-    paddingLeft: 8,
+    textTransform: "capitalize",
+  },
+  previewItemBalance: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  categoriesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 4,
+  },
+  categoryChipIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  categoryChipText: {
+    fontSize: 12,
+    color: COLORS.text,
+    fontWeight: "500",
+  },
+  categoryChipType: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  transactionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  transactionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  transactionIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  transactionTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: COLORS.text,
+  },
+  transactionDetails: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  transactionAmount: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   previewMore: {
     fontSize: 12,
     color: COLORS.textSecondary,
     fontStyle: "italic",
-    marginTop: 4,
-    paddingLeft: 8,
+    marginTop: 8,
+    textAlign: "center",
+    paddingVertical: 8,
+    backgroundColor: COLORS.background + "80",
+    borderRadius: 6,
   },
 });
 

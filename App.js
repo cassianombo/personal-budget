@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Text, View } from "react-native";
 
+import AppNavigator from "./navigation/AppNavigator";
 import { COLORS } from "./constants/colors";
 import { NavigationContainer } from "@react-navigation/native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import TabNavigator from "./navigation/TabNavigator";
 import { useDatabaseInitialization } from "./services/useDatabase";
 
 // Create a client
@@ -76,7 +76,7 @@ function AppContent() {
   return (
     <NavigationContainer>
       <StatusBar style="light" backgroundColor={COLORS.background} />
-      <TabNavigator />
+      <AppNavigator />
     </NavigationContainer>
   );
 }
