@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { AmountInput, Button, IconButton, TextInput } from "../UI";
+import { AmountInput, Button, Header, IconButton, TextInput } from "../UI";
 import {
   DEFAULT_WALLET_CONFIG,
   WALLET_BACKGROUND_COLORS,
@@ -253,26 +253,11 @@ const AddWalletModal = ({ visible, onClose }) => {
       onRequestClose={handleClose}>
       <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View
-          style={[
-            styles.header,
-            { paddingHorizontal: responsiveValues.headerPadding },
-          ]}>
-          <IconButton
-            icon="left"
-            onPress={handleClose}
-            style={styles.backButton}
-          />
-          <View style={styles.headerContent}>
-            <Text
-              style={[
-                styles.headerTitle,
-                { fontSize: responsiveValues.isSmallScreen ? 18 : 20 },
-              ]}>
-              Add Wallet
-            </Text>
-          </View>
-        </View>
+        <Header
+          title="Add Wallet"
+          onBack={handleClose}
+          style={{ paddingHorizontal: responsiveValues.headerPadding }}
+        />
 
         <ScrollView
           style={[styles.content, { padding: responsiveValues.contentPadding }]}
@@ -495,32 +480,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 8,
-    paddingBottom: 16,
-    backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: COLORS.text,
-    letterSpacing: -0.2,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
   },
 
   // Preview

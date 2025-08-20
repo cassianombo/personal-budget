@@ -1,3 +1,4 @@
+import { WALLET_BACKGROUND_COLORS } from "../constants/walletOptions";
 import categoriesMock from "../constants/categoriesMock";
 import databaseService from "./DatabaseService";
 import { generateId } from "../utils/generateId";
@@ -14,7 +15,7 @@ const sampleWallets = [
     name: "Main Checking",
     balance: 2500.0,
     icon: "creditcard",
-    background: "#6C5CE7",
+    background: WALLET_BACKGROUND_COLORS[0],
     type: "debit",
   },
   {
@@ -22,7 +23,7 @@ const sampleWallets = [
     name: "Savings Account",
     balance: 15000.0,
     icon: "wallet",
-    background: "#00B894",
+    background: WALLET_BACKGROUND_COLORS[1],
     type: "debit",
   },
   {
@@ -30,7 +31,7 @@ const sampleWallets = [
     name: "Credit Card",
     balance: -450.0,
     icon: "home",
-    background: "#E17055",
+    background: WALLET_BACKGROUND_COLORS[2],
     type: "credit",
   },
   {
@@ -38,7 +39,23 @@ const sampleWallets = [
     name: "Cash Wallet",
     balance: 120.0,
     icon: "star",
-    background: "#FDCB6E",
+    background: WALLET_BACKGROUND_COLORS[3],
+    type: "cash",
+  },
+  {
+    id: generateId(),
+    name: "Cash Wallet 2",
+    balance: 120.0,
+    icon: "star",
+    background: WALLET_BACKGROUND_COLORS[4],
+    type: "cash",
+  },
+  {
+    id: generateId(),
+    name: "Cash Wallet 3",
+    balance: 120.0,
+    icon: "star",
+    background: WALLET_BACKGROUND_COLORS[5],
     type: "cash",
   },
 ];

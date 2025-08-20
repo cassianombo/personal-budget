@@ -115,35 +115,13 @@ const WalletDetailScreen = ({ route, navigation }) => {
           />
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.actionsSection}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionButtons}>
-            <Pressable style={styles.actionCard} onPress={handleAddTransaction}>
-              <View style={styles.actionIconContainer}>
-                <Icon name="plus" size={24} color={COLORS.primary} />
-              </View>
-              <Text style={styles.actionText}>Add Transaction</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionCard}
-              onPress={handleViewAllTransactions}>
-              <View style={styles.actionIconContainer}>
-                <Icon name="bars" size={24} color={COLORS.secondary} />
-              </View>
-              <Text style={styles.actionText}>View Transactions</Text>
-            </Pressable>
-          </View>
-        </View>
-
         {/* Wallet Statistics */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Statistics</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>Total Transactions</Text>
+              <Text style={styles.statLabel}>Total</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>0</Text>
@@ -155,7 +133,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>Average/Month</Text>
+              <Text style={styles.statLabel}>Avg/Month</Text>
             </View>
           </View>
         </View>
@@ -196,54 +174,6 @@ const WalletDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
         </View>
-
-        {/* Wallet Details */}
-        <View style={styles.detailsSection}>
-          <Text style={styles.sectionTitle}>Wallet Details</Text>
-          <View style={styles.detailsCard}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Wallet ID</Text>
-              <Text style={styles.detailValue}>{wallet.id}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Type</Text>
-              <Text style={styles.detailValue}>{walletTypeInfo.label}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Theme Color</Text>
-              <View style={styles.colorIndicator}>
-                <View
-                  style={[
-                    styles.colorDot,
-                    {
-                      backgroundColor:
-                        wallet.background || walletTypeInfo.color,
-                    },
-                  ]}
-                />
-                <Text style={styles.detailValue}>
-                  {wallet.background ? "Custom" : "Default"}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Created</Text>
-              <Text style={styles.detailValue}>
-                {wallet.createdAt
-                  ? new Date(wallet.createdAt).toLocaleDateString()
-                  : "Recently"}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Last Updated</Text>
-              <Text style={styles.detailValue}>
-                {wallet.updatedAt
-                  ? new Date(wallet.updatedAt).toLocaleDateString()
-                  : "Recently"}
-              </Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
 
       {/* Loading Overlay */}
@@ -273,9 +203,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  actionsSection: {
-    marginBottom: 24,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -283,64 +210,38 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     letterSpacing: -0.2,
   },
-  actionButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.input,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.text,
-    textAlign: "center",
-  },
+
   statsSection: {
-    marginBottom: 24,
-    marginTop: 8, // Add some top margin for better separation
+    marginBottom: 20,
+    marginTop: 4,
   },
   statsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
   },
   statCard: {
     flex: 1,
-    minWidth: "45%",
     backgroundColor: COLORS.card,
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: "center",
     borderWidth: 1,
     borderColor: COLORS.border,
+    minHeight: 70,
+    justifyContent: "center",
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
     color: COLORS.text,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
     fontWeight: "500",
     textAlign: "center",
+    lineHeight: 13,
   },
   transactionsSection: {
     marginBottom: 24,
@@ -398,9 +299,6 @@ const styles = StyleSheet.create({
   emptyButton: {
     paddingHorizontal: 24,
   },
-  detailsSection: {
-    marginBottom: 24,
-  },
   notesSection: {
     marginBottom: 24,
   },
@@ -416,44 +314,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 20,
     fontStyle: "italic",
-  },
-  detailsCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 20,
-    paddingVertical: 4,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
-  },
-  detailValue: {
-    fontSize: 14,
-    color: COLORS.text,
-    fontWeight: "600",
-  },
-  colorIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  colorDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   loadingOverlay: {
     position: "absolute",
