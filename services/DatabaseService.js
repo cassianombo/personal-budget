@@ -516,10 +516,15 @@ class DatabaseService {
               Math.abs(validatedTransaction.amount)
             );
           }
-        } else {
+        } else if (validatedTransaction.type === "expense") {
           await this.updateWalletBalance(
             validatedTransaction.walletId,
-            validatedTransaction.amount
+            -Math.abs(validatedTransaction.amount)
+          );
+        } else if (validatedTransaction.type === "income") {
+          await this.updateWalletBalance(
+            validatedTransaction.walletId,
+            Math.abs(validatedTransaction.amount)
           );
         }
 
@@ -669,10 +674,17 @@ class DatabaseService {
               Math.abs(validatedTransaction.amount)
             );
           }
-        } else {
+        } else if (validatedTransaction.type === "expense") {
+          // For expenses, subtract the amount (negative)
           await this.updateWalletBalance(
             validatedTransaction.walletId,
-            validatedTransaction.amount
+            -Math.abs(validatedTransaction.amount)
+          );
+        } else if (validatedTransaction.type === "income") {
+          // For income, add the amount (positive)
+          await this.updateWalletBalance(
+            validatedTransaction.walletId,
+            Math.abs(validatedTransaction.amount)
           );
         }
 

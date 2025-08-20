@@ -5,16 +5,21 @@ import {
   Text,
   View,
 } from "react-native";
+import React, { useState } from "react";
 import { useTotalBalance, useWallets } from "../services/useDatabase";
 
 import { AntDesign } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
+import CreateTransactionModal from "../components/Transaction/CreateTransactionModal";
+import FloatingActionButton from "../components/UI/FloatingActionButton";
 import NetWorthPanel from "../components/Widgets/NetWorthPanel";
-import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WalletList from "../components/Wallet/WalletList";
 
 export default function HomeScreen({ navigation }) {
+  const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
+    useState(false);
+
   const {
     data: totalBalance,
     isLoading: balanceLoading,
@@ -73,6 +78,22 @@ export default function HomeScreen({ navigation }) {
           }
         />
       </ScrollView>
+
+      {/* Floating Action Button for creating transactions */}
+      <FloatingActionButton
+        onPress={() => setIsCreateTransactionModalVisible(true)}
+        icon="plus"
+        size={24}
+        backgroundColor={COLORS.primary}
+        iconColor="#FFFFFF"
+      />
+
+      {/* Create Transaction Modal */}
+      <CreateTransactionModal
+        visible={isCreateTransactionModalVisible}
+        onClose={() => setIsCreateTransactionModalVisible(false)}
+        wallets={wallets || []}
+      />
     </SafeAreaView>
   );
 }
@@ -84,7 +105,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingBottom: 100, // Extra space for bottom tab navigation
+    paddingBottom: 120, // Extra space for bottom tab navigation + FAB
   },
   centered: {
     alignItems: "center",

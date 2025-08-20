@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     marginBottom: 16,
     minHeight: 48,
+    height: 48,
     justifyContent: "center",
   },
   content: {

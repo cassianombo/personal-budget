@@ -68,13 +68,13 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: COLORS.card,
     borderWidth: 0,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 48,
+    height: 48,
   },
   buttonActive: {
     backgroundColor: COLORS.primary,

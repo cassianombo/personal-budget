@@ -26,14 +26,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     fontSize: 16,
     color: COLORS.text,
     minHeight: 48,
+    height: 48,
     marginBottom: 16,
+    textAlignVertical: "center",
   },
   multiline: {
     minHeight: 80,
+    height: undefined,
     textAlignVertical: "top",
   },
 });

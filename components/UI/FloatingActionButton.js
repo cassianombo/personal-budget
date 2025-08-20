@@ -9,7 +9,7 @@ const FloatingActionButton = ({
   icon = "plus",
   size = 24,
   backgroundColor = COLORS.primary,
-  iconColor = COLORS.background,
+  iconColor = "#FFFFFF",
 }) => {
   return (
     <Pressable
@@ -27,25 +27,30 @@ const FloatingActionButton = ({
 const styles = StyleSheet.create({
   fab: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
+    bottom: 24,
+    right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 8,
+    // Elegant shadow
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
     zIndex: 1000,
+    // Subtle border for definition
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.9,
+    transform: [{ scale: 0.96 }],
   },
 });
 
