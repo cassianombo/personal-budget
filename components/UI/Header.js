@@ -76,5 +76,4 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
-
 export default Header;

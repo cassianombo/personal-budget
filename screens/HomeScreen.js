@@ -13,6 +13,7 @@ import { COLORS } from "../constants/colors";
 import CreateTransactionModal from "../components/Transaction/CreateTransactionModal";
 import FloatingActionButton from "../components/UI/FloatingActionButton";
 import NetWorthPanel from "../components/Widgets/NetWorthPanel";
+import { PageHeader } from "../components/UI";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WalletList from "../components/Wallet/WalletList";
 
@@ -59,10 +60,10 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Home</Text>
-          <Text style={styles.subtitle}>Welcome to your Personal Budget</Text>
-        </View>
+        <PageHeader
+          title="Home"
+          subtitle="Welcome to your Personal Budget App"
+        />
 
         <NetWorthPanel
           value={totalBalance || 0}
@@ -111,19 +112,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-  },
+
   loadingText: {
     marginTop: 16,
     fontSize: 16,

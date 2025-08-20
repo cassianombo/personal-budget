@@ -1,33 +1,41 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { TRANSACTION_TYPE, getTransactionTypeInfo } from "../../constants";
 
 import { COLORS } from "../../constants/colors";
+import Icon from "../UI/Icon";
 import React from "react";
-import { TRANSACTION_TYPE } from "../../constants";
 
-const TransactionItem = ({ transaction, onPress }) => {
-  const { amount, title, categoryName, type, date } = transaction;
+const TransactionItem = ({ transaction, onPress, onLongPress }) => {
+  const {
+    amount,
+    title,
+    categoryName,
+    type,
+    date,
+    walletName,
+    categoryIcon,
+    categoryBackground,
+  } = transaction;
+
+  const transactionInfo = getTransactionTypeInfo(type);
+  const isTransfer = type === TRANSACTION_TYPE.TRANSFER;
 
   const formatCurrency = (amount) => {
     const absAmount = Math.abs(amount);
-    if (type === TRANSACTION_TYPE.TRANSFER) {
-      return `$${absAmount.toFixed(2)}`;
-    }
-    return `${
-      type === TRANSACTION_TYPE.EXPENSE ? "-" : "+"
-    }$${absAmount.toFixed(2)}`;
+    const sign = isTransfer ? "" : transactionInfo.sign;
+    return `${sign}$${absAmount.toFixed(2)}`;
   };
 
   const getTransactionIcon = () => {
-    if (type === TRANSACTION_TYPE.TRANSFER) return "swap";
-    if (type === TRANSACTION_TYPE.INCOME) return "💰";
-    return "💸";
+    if (isTransfer) return "swap";
+    if (categoryIcon) return categoryIcon;
+    return transactionInfo.icon;
   };
 
-  const getAmountColor = () => {
-    if (type === TRANSACTION_TYPE.TRANSFER) return COLORS.balance;
-    if (type === TRANSACTION_TYPE.EXPENSE) return COLORS.expense;
-    if (type === TRANSACTION_TYPE.INCOME) return COLORS.income;
-    return COLORS.text;
+  const getIconBackground = () => {
+    if (isTransfer) return COLORS.transfer;
+    if (categoryBackground) return categoryBackground;
+    return transactionInfo.color;
   };
 
   const formatDate = (dateString) => {
@@ -39,30 +47,39 @@ const TransactionItem = ({ transaction, onPress }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <Pressable
+      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      onPress={onPress}
+      onLongPress={onLongPress}>
       <View style={styles.leftSection}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>{getTransactionIcon()}</Text>
+        <View
+          style={[
+            styles.iconContainer,
+            { backgroundColor: getIconBackground() },
+          ]}>
+          <Icon name={getTransactionIcon()} size={20} color={COLORS.text} />
         </View>
         <View style={styles.details}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          {categoryName && (
-            <Text style={styles.category} numberOfLines={1}>
-              {categoryName}
-            </Text>
-          )}
+          <View style={styles.metaInfo}>
+            {walletName && (
+              <Text style={styles.wallet} numberOfLines={1}>
+                {walletName}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={[styles.amount, { color: getAmountColor() }]}>
+        <Text style={[styles.amount, { color: transactionInfo.color }]}>
           {formatCurrency(amount)}
         </Text>
         <Text style={styles.date}>{formatDate(date)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -72,24 +89,45 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  pressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  leftSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 16,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.input,
-    alignItems: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  icon: {
-    fontSize: 18,
-  },
-  content: {
+  details: {
     flex: 1,
-    marginRight: 12,
   },
   title: {
     fontSize: 16,
@@ -97,18 +135,15 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
-  description: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  metaContainer: {
+  metaInfo: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 4,
   },
-  metaText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
+  wallet: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   rightSection: {
     alignItems: "flex-end",
@@ -121,6 +156,7 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 12,
     color: COLORS.textMuted,
+    fontWeight: "500",
   },
 });
 

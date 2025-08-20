@@ -543,7 +543,7 @@ class DatabaseService {
   async getTransactions(filters = {}) {
     try {
       let query = `
-        SELECT t.*, c.name as categoryName, w.name as walletName, w2.name as secondWalletName 
+        SELECT t.*, c.name as categoryName, c.icon as categoryIcon, c.background as categoryBackground, w.name as walletName, w2.name as secondWalletName 
         FROM transactions t
         LEFT JOIN categories c ON t.categoryId = c.id
         LEFT JOIN wallets w ON t.walletId = w.id
@@ -597,6 +597,8 @@ class DatabaseService {
         description: row.description,
         type: row.type,
         categoryName: row.categoryName,
+        categoryIcon: row.categoryIcon,
+        categoryBackground: row.categoryBackground,
         walletName: row.walletName,
         secondWalletName: row.secondWalletName,
       }));
