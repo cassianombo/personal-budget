@@ -12,17 +12,19 @@ import React, { useEffect, useState } from "react";
 import {
   useCategories,
   useCreateTransaction,
+  useUpdateTransaction,
 } from "../../services/useDatabase";
 
 import { COLORS } from "../../constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { generateId } from "../../utils/generateId";
 
-const CreateTransactionModal = ({
+const TransactionModal = ({
   visible,
   onClose,
   wallets = [],
   preSelectedWalletId,
+  transaction = null, // For editing
 }) => {
   const [formData, setFormData] = useState({
     amount: "",
@@ -36,7 +38,10 @@ const CreateTransactionModal = ({
   });
 
   const createTransactionMutation = useCreateTransaction();
+  const updateTransactionMutation = useUpdateTransaction();
   const { data: categories = [], isLoading, error } = useCategories();
+
+  const isEditing = !!transaction;
 
   const handleSubmit = async () => {
     // Simple validation - only create if all required fields are filled
@@ -75,7 +80,6 @@ const CreateTransactionModal = ({
       } = formData;
 
       const transactionData = {
-        id: generateId(),
         amount: parseFloat(amount),
         title: title.trim(),
         description: formData.description.trim(),
@@ -84,32 +88,52 @@ const CreateTransactionModal = ({
         secondWalletId: secondWalletId || null,
         date,
         type,
-        createdAt: new Date().toISOString(),
       };
 
-      await createTransactionMutation.mutateAsync(transactionData);
+      if (isEditing) {
+        // Update existing transaction
+        await updateTransactionMutation.mutateAsync({
+          id: transaction.id,
+          ...transactionData,
+        });
+      } else {
+        // Create new transaction
+        await createTransactionMutation.mutateAsync({
+          id: generateId(),
+          ...transactionData,
+          createdAt: new Date().toISOString(),
+        });
+      }
 
-      Alert.alert("Success", "Transaction created successfully", [
-        {
-          text: "OK",
-          onPress: () => {
-            // Reset form and close modal
-            setFormData({
-              amount: "",
-              title: "",
-              description: "",
-              categoryId: "",
-              walletId: "",
-              secondWalletId: "",
-              date: new Date().toISOString(),
-              type: "expense",
-            });
-            onClose();
+      Alert.alert(
+        "Success",
+        `Transaction ${isEditing ? "updated" : "created"} successfully`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Reset form and close modal
+              setFormData({
+                amount: "",
+                title: "",
+                description: "",
+                categoryId: "",
+                walletId: "",
+                secondWalletId: "",
+                date: new Date().toISOString(),
+                type: "expense",
+              });
+              onClose();
+            },
           },
-        },
-      ]);
+        ]
+      );
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to create transaction");
+      Alert.alert(
+        "Error",
+        error.message ||
+          `Failed to ${isEditing ? "update" : "create"} transaction`
+      );
     }
   };
 
@@ -141,18 +165,33 @@ const CreateTransactionModal = ({
   // Reset form when modal opens/closes or preSelectedWalletId changes
   useEffect(() => {
     if (visible) {
-      setFormData({
-        amount: "",
-        title: "",
-        description: "",
-        categoryId: "",
-        walletId: preSelectedWalletId || "",
-        secondWalletId: "",
-        date: new Date().toISOString(),
-        type: "expense",
-      });
+      if (isEditing && transaction) {
+        // Populate form with transaction data for editing
+        setFormData({
+          amount: transaction.amount.toString(),
+          title: transaction.title || "",
+          description: transaction.description || "",
+          categoryId: transaction.categoryId || "",
+          walletId: transaction.walletId || "",
+          secondWalletId: transaction.secondWalletId || "",
+          date: transaction.date || new Date().toISOString(),
+          type: transaction.type || "expense",
+        });
+      } else {
+        // Reset form for creating new transaction
+        setFormData({
+          amount: "",
+          title: "",
+          description: "",
+          categoryId: "",
+          walletId: preSelectedWalletId || "",
+          secondWalletId: "",
+          date: new Date().toISOString(),
+          type: "expense",
+        });
+      }
     }
-  }, [visible, preSelectedWalletId]);
+  }, [visible, preSelectedWalletId, transaction, isEditing]);
 
   return (
     <Modal
@@ -162,7 +201,7 @@ const CreateTransactionModal = ({
       onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <Header
-          title="Create Transaction"
+          title={isEditing ? "Edit Transaction" : "Create Transaction"}
           onBack={onClose}
           showBackButton={true}
         />
@@ -272,12 +311,24 @@ const CreateTransactionModal = ({
         <View style={styles.footer}>
           <Button
             title={
-              createTransactionMutation.isPending
-                ? "Creating..."
+              (
+                isEditing
+                  ? updateTransactionMutation.isPending
+                  : createTransactionMutation.isPending
+              )
+                ? isEditing
+                  ? "Updating..."
+                  : "Creating..."
+                : isEditing
+                ? "Update Transaction"
                 : "Create Transaction"
             }
             onPress={handleSubmit}
-            disabled={createTransactionMutation.isPending}
+            disabled={
+              isEditing
+                ? updateTransactionMutation.isPending
+                : createTransactionMutation.isPending
+            }
             style={styles.submitButton}
           />
         </View>
@@ -345,4 +396,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateTransactionModal;
+export default TransactionModal;

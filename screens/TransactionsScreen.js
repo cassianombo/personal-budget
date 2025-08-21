@@ -1,9 +1,10 @@
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  CreateTransactionModal,
-  TransactionItem,
-} from "../components/Transaction";
 import { FloatingActionButton, PageHeader } from "../components/UI";
+import {
+  TransactionDetailModal,
+  TransactionItem,
+  TransactionModal,
+} from "../components/Transaction";
 import { useCallback, useMemo, useState } from "react";
 import {
   useDeleteTransaction,
@@ -19,6 +20,10 @@ export default function TransactionsScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   const {
     data: transactions = [],
@@ -103,15 +108,8 @@ export default function TransactionsScreen() {
   };
 
   const handleTransactionPress = (transaction) => {
-    Alert.alert(
-      "Transaction Details",
-      `Title: ${transaction.title}\nAmount: $${Math.abs(
-        transaction.amount
-      ).toFixed(2)}\nType: ${transaction.type}\nDate: ${new Date(
-        transaction.date
-      ).toLocaleDateString()}`,
-      [{ text: "OK" }]
-    );
+    setSelectedTransaction(transaction);
+    setIsDetailModalVisible(true);
   };
 
   const renderDateHeader = ({ item }) => {
@@ -246,10 +244,35 @@ export default function TransactionsScreen() {
         icon="plus"
       />
 
-      <CreateTransactionModal
+      <TransactionModal
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         wallets={wallets || []}
+      />
+
+      <TransactionDetailModal
+        visible={isDetailModalVisible}
+        transaction={selectedTransaction}
+        onClose={() => {
+          setIsDetailModalVisible(false);
+          setSelectedTransaction(null);
+        }}
+        onEdit={(transaction) => {
+          setIsDetailModalVisible(false);
+          setSelectedTransaction(null);
+          setEditingTransaction(transaction);
+          setIsEditModalVisible(true);
+        }}
+      />
+
+      <TransactionModal
+        visible={isEditModalVisible}
+        onClose={() => {
+          setIsEditModalVisible(false);
+          setEditingTransaction(null);
+        }}
+        wallets={wallets || []}
+        transaction={editingTransaction}
       />
     </SafeAreaView>
   );

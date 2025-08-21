@@ -8,6 +8,10 @@ import {
 } from "react-native";
 import { Button, FloatingActionButton, Header } from "../components/UI";
 import React, { useMemo, useState } from "react";
+import {
+  TransactionDetailModal,
+  TransactionModal,
+} from "../components/Transaction";
 import { WalletCard, WalletModal } from "../components/Wallet";
 import {
   useDeleteWallet,
@@ -16,7 +20,6 @@ import {
 } from "../services/useDatabase";
 
 import { COLORS } from "../constants/colors";
-import { CreateTransactionModal } from "../components/Transaction";
 import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionList } from "../components/Transaction";
@@ -29,6 +32,11 @@ const WalletDetailScreen = ({ route, navigation }) => {
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
     useState(false);
   const [isEditWalletModalVisible, setIsEditWalletModalVisible] =
+    useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isEditTransactionModalVisible, setIsEditTransactionModalVisible] =
     useState(false);
   const deleteWalletMutation = useDeleteWallet();
 
@@ -104,15 +112,8 @@ const WalletDetailScreen = ({ route, navigation }) => {
   };
 
   const handleTransactionPress = (transaction) => {
-    Alert.alert(
-      "Transaction Details",
-      `Title: ${transaction.title}\nAmount: $${Math.abs(
-        transaction.amount
-      ).toFixed(2)}\nType: ${transaction.type}\nDate: ${new Date(
-        transaction.date
-      ).toLocaleDateString()}`,
-      [{ text: "OK" }]
-    );
+    setSelectedTransaction(transaction);
+    setIsDetailModalVisible(true);
   };
 
   const handleTransactionLongPress = (transactionId) => {
@@ -248,7 +249,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
       <FloatingActionButton onPress={handleAddTransaction} icon="plus" />
 
       {/* Create Transaction Modal */}
-      <CreateTransactionModal
+      <TransactionModal
         visible={isCreateTransactionModalVisible}
         onClose={() => setIsCreateTransactionModalVisible(false)}
         wallets={allWallets}
@@ -260,6 +261,33 @@ const WalletDetailScreen = ({ route, navigation }) => {
         visible={isEditWalletModalVisible}
         onClose={() => setIsEditWalletModalVisible(false)}
         wallet={wallet}
+      />
+
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        visible={isDetailModalVisible}
+        transaction={selectedTransaction}
+        onClose={() => {
+          setIsDetailModalVisible(false);
+          setSelectedTransaction(null);
+        }}
+        onEdit={(transaction) => {
+          setIsDetailModalVisible(false);
+          setSelectedTransaction(null);
+          setEditingTransaction(transaction);
+          setIsEditTransactionModalVisible(true);
+        }}
+      />
+
+      {/* Edit Transaction Modal */}
+      <TransactionModal
+        visible={isEditTransactionModalVisible}
+        onClose={() => {
+          setIsEditTransactionModalVisible(false);
+          setEditingTransaction(null);
+        }}
+        wallets={allWallets}
+        transaction={editingTransaction}
       />
 
       {/* Loading Overlay */}

@@ -10,11 +10,11 @@ import { useTotalBalance, useWallets } from "../services/useDatabase";
 
 import { AntDesign } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
-import CreateTransactionModal from "../components/Transaction/CreateTransactionModal";
 import FloatingActionButton from "../components/UI/FloatingActionButton";
 import NetWorthPanel from "../components/Widgets/NetWorthPanel";
 import { PageHeader } from "../components/UI";
 import { SafeAreaView } from "react-native-safe-area-context";
+import TransactionModal from "../components/Transaction/TransactionModal";
 import WalletList from "../components/Wallet/WalletList";
 
 export default function HomeScreen({ navigation }) {
@@ -90,7 +90,7 @@ export default function HomeScreen({ navigation }) {
       />
 
       {/* Create Transaction Modal */}
-      <CreateTransactionModal
+      <TransactionModal
         visible={isCreateTransactionModalVisible}
         onClose={() => setIsCreateTransactionModalVisible(false)}
         wallets={wallets || []}
