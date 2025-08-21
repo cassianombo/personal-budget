@@ -6,21 +6,39 @@ import {
   Text,
   View,
 } from "react-native";
-import { Button, Header } from "../components/UI";
-import React, { useState } from "react";
+import { Button, FloatingActionButton, Header } from "../components/UI";
+import React, { useMemo, useState } from "react";
+import {
+  useDeleteWallet,
+  useTransactionsByWalletId,
+  useWallets,
+} from "../services/useDatabase";
 
 import { COLORS } from "../constants/colors";
+import { CreateTransactionModal } from "../components/Transaction";
 import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TransactionList } from "../components/Transaction";
 import WalletCard from "../components/Wallet/WalletCard";
 import { formatCurrency } from "../utils/helpers";
 import { getWalletTypeInfo } from "../constants/Types/walletTypes";
-import { useDeleteWallet } from "../services/useDatabase";
 
 const WalletDetailScreen = ({ route, navigation }) => {
   const { wallet } = route.params;
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
+    useState(false);
   const deleteWalletMutation = useDeleteWallet();
+
+  // Fetch transactions for this wallet
+  const {
+    data: walletTransactions = [],
+    isLoading: transactionsLoading,
+    error: transactionsError,
+  } = useTransactionsByWalletId(wallet.id);
+
+  // Fetch all wallets for the transaction modal
+  const { data: allWallets = [] } = useWallets();
 
   const walletTypeInfo = getWalletTypeInfo(wallet.type);
 
@@ -81,14 +99,71 @@ const WalletDetailScreen = ({ route, navigation }) => {
   };
 
   const handleAddTransaction = () => {
-    // TODO: Navigate to add transaction screen with wallet pre-selected
-    console.log("Add transaction for wallet:", wallet.id);
+    setIsCreateTransactionModalVisible(true);
   };
 
-  const handleViewAllTransactions = () => {
-    // TODO: Navigate to transactions screen filtered by this wallet
-    console.log("View all transactions for wallet:", wallet.id);
+  const handleTransactionPress = (transaction) => {
+    Alert.alert(
+      "Transaction Details",
+      `Title: ${transaction.title}\nAmount: $${Math.abs(
+        transaction.amount
+      ).toFixed(2)}\nType: ${transaction.type}\nDate: ${new Date(
+        transaction.date
+      ).toLocaleDateString()}`,
+      [{ text: "OK" }]
+    );
   };
+
+  const handleTransactionLongPress = (transactionId) => {
+    Alert.alert(
+      "Delete Transaction",
+      "Are you sure you want to delete this transaction?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            // TODO: Implement delete transaction functionality
+            console.log("Delete transaction:", transactionId);
+          },
+        },
+      ]
+    );
+  };
+
+  // Calculate wallet statistics
+  const walletStats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    const thisYearTransactions = walletTransactions.filter((t) => {
+      const date = new Date(t.date);
+      return date.getFullYear() === thisYear;
+    });
+
+    const thisMonthTransactions = walletTransactions.filter((t) => {
+      const date = new Date(t.date);
+      return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+    });
+
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+    const lastMonthTransactions = walletTransactions.filter((t) => {
+      const date = new Date(t.date);
+      return (
+        date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear
+      );
+    });
+
+    return {
+      thisYear: thisYearTransactions.length,
+      thisMonth: thisMonthTransactions.length,
+      lastMonth: lastMonthTransactions.length,
+    };
+  }, [walletTransactions]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -120,20 +195,16 @@ const WalletDetailScreen = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Statistics</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={styles.statValue}>{walletStats.thisYear}</Text>
+              <Text style={styles.statLabel}>This Year</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statValue}>{walletStats.thisMonth}</Text>
               <Text style={styles.statLabel}>This Month</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statValue}>{walletStats.lastMonth}</Text>
               <Text style={styles.statLabel}>Last Month</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>Avg/Month</Text>
             </View>
           </View>
         </View>
@@ -152,29 +223,46 @@ const WalletDetailScreen = ({ route, navigation }) => {
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <Pressable onPress={handleViewAllTransactions}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </Pressable>
           </View>
 
           <View style={styles.transactionsList}>
-            <View style={styles.emptyTransactions}>
-              <View style={styles.emptyIconContainer}>
-                <Icon name="filetext1" size={48} color={COLORS.textSecondary} />
+            {transactionsLoading ? (
+              <View style={styles.loadingTransactions}>
+                <Text style={styles.loadingText}>Loading transactions...</Text>
               </View>
-              <Text style={styles.emptyTitle}>No Transactions Yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Start tracking your spending by adding your first transaction
-              </Text>
-              <Button
-                title="Add Transaction"
-                onPress={handleAddTransaction}
-                style={styles.emptyButton}
+            ) : transactionsError ? (
+              <View style={styles.errorTransactions}>
+                <Text style={styles.errorText}>Error loading transactions</Text>
+                <Text style={styles.errorSubtext}>
+                  {transactionsError.message}
+                </Text>
+              </View>
+            ) : (
+              <TransactionList
+                transactions={walletTransactions}
+                onTransactionPress={handleTransactionPress}
+                onTransactionLongPress={handleTransactionLongPress}
+                showDateHeaders={true}
+                showEmptyState={true}
+                emptyStateTitle="No Transactions Yet"
+                emptyStateSubtitle="Start tracking your spending by adding your first transaction"
+                style={styles.transactionListStyle}
               />
-            </View>
+            )}
           </View>
         </View>
       </ScrollView>
+
+      {/* Floating Action Button for adding transactions */}
+      <FloatingActionButton onPress={handleAddTransaction} icon="plus" />
+
+      {/* Create Transaction Modal */}
+      <CreateTransactionModal
+        visible={isCreateTransactionModalVisible}
+        onClose={() => setIsCreateTransactionModalVisible(false)}
+        wallets={allWallets}
+        preSelectedWalletId={wallet.id}
+      />
 
       {/* Loading Overlay */}
       {isLoading && (
@@ -253,11 +341,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  viewAllText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: "600",
-  },
+
   transactionsList: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
@@ -266,38 +350,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 4,
   },
-  emptyTransactions: {
+  loadingTransactions: {
     alignItems: "center",
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.input,
-    justifyContent: "center",
+  errorTransactions: {
     alignItems: "center",
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
-  emptyTitle: {
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  errorText: {
     fontSize: 18,
     fontWeight: "600",
-    color: COLORS.text,
+    color: COLORS.expense,
     marginBottom: 8,
     textAlign: "center",
   },
-  emptySubtitle: {
+  errorSubtext: {
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 20,
   },
-  emptyButton: {
-    paddingHorizontal: 24,
+  transactionListStyle: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   notesSection: {
     marginBottom: 24,

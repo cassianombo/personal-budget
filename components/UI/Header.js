@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "../../constants/colors";
-import { HeaderButton } from "./index";
+import HeaderButton from "./HeaderButton";
 import React from "react";
 
 const Header = ({

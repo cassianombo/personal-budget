@@ -144,6 +144,18 @@ export const useTransactions = () => {
   });
 };
 
+export const useTransactionsByWalletId = (walletId) => {
+  const queryClient = useQueryClient();
+  const dbInit = queryClient.getQueryData(["databaseInit"]);
+
+  return useQuery({
+    queryKey: [QUERY_KEYS.TRANSACTIONS, "wallet", walletId],
+    queryFn: () => databaseService.getTransactions({ walletId }),
+    staleTime: 1 * 60 * 1000, // 1 minute - transactions change frequently
+    enabled: !!walletId && dbInit?.initialized === true, // Only run when database is ready
+  });
+};
+
 export const useCreateTransaction = () => {
   const queryClient = useQueryClient();
 

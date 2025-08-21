@@ -8,7 +8,7 @@ import {
   TextInput,
   TransactionTypeSelector,
 } from "../UI";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   useCategories,
   useCreateTransaction,
@@ -18,13 +18,18 @@ import { COLORS } from "../../constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { generateId } from "../../utils/generateId";
 
-const CreateTransactionModal = ({ visible, onClose, wallets = [] }) => {
+const CreateTransactionModal = ({
+  visible,
+  onClose,
+  wallets = [],
+  preSelectedWalletId,
+}) => {
   const [formData, setFormData] = useState({
     amount: "",
     title: "",
     description: "",
     categoryId: "",
-    walletId: "",
+    walletId: preSelectedWalletId || "",
     secondWalletId: "",
     date: new Date().toISOString(),
     type: "expense", // expense, income, transfer
@@ -132,6 +137,22 @@ const CreateTransactionModal = ({ visible, onClose, wallets = [] }) => {
 
     return categories.filter((cat) => cat.type === formData.type);
   };
+
+  // Reset form when modal opens/closes or preSelectedWalletId changes
+  useEffect(() => {
+    if (visible) {
+      setFormData({
+        amount: "",
+        title: "",
+        description: "",
+        categoryId: "",
+        walletId: preSelectedWalletId || "",
+        secondWalletId: "",
+        date: new Date().toISOString(),
+        type: "expense",
+      });
+    }
+  }, [visible, preSelectedWalletId]);
 
   return (
     <Modal

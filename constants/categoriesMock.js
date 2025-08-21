@@ -3,7 +3,7 @@ const categoriesMock = [
   {
     id: "food-dining",
     name: "Food & Dining",
-    icon: "coffee",
+    icon: "rest",
     background: "#FF5722",
     type: "expense",
   },

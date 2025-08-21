@@ -5,7 +5,11 @@ import {
 } from "../components/Transaction";
 import { FloatingActionButton, PageHeader } from "../components/UI";
 import { useCallback, useMemo, useState } from "react";
-import { useDeleteTransaction, useTransactions } from "../services/useDatabase";
+import {
+  useDeleteTransaction,
+  useTransactions,
+  useWallets,
+} from "../services/useDatabase";
 
 import { COLORS } from "../constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +26,11 @@ export default function TransactionsScreen() {
     error,
     refetch,
   } = useTransactions();
+  const {
+    data: wallets = [],
+    isLoading: walletsLoading,
+    error: walletsError,
+  } = useWallets();
   const deleteTransactionMutation = useDeleteTransaction();
 
   const onRefresh = useCallback(async () => {
@@ -240,6 +249,7 @@ export default function TransactionsScreen() {
       <CreateTransactionModal
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
+        wallets={wallets || []}
       />
     </SafeAreaView>
   );
