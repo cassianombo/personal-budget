@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Button, FloatingActionButton, Header } from "../components/UI";
 import React, { useMemo, useState } from "react";
+import { WalletCard, WalletModal } from "../components/Wallet";
 import {
   useDeleteWallet,
   useTransactionsByWalletId,
@@ -19,7 +20,6 @@ import { CreateTransactionModal } from "../components/Transaction";
 import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionList } from "../components/Transaction";
-import WalletCard from "../components/Wallet/WalletCard";
 import { formatCurrency } from "../utils/helpers";
 import { getWalletTypeInfo } from "../constants/Types/walletTypes";
 
@@ -27,6 +27,8 @@ const WalletDetailScreen = ({ route, navigation }) => {
   const { wallet } = route.params;
   const [isLoading, setIsLoading] = useState(false);
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
+    useState(false);
+  const [isEditWalletModalVisible, setIsEditWalletModalVisible] =
     useState(false);
   const deleteWalletMutation = useDeleteWallet();
 
@@ -43,8 +45,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
   const walletTypeInfo = getWalletTypeInfo(wallet.type);
 
   const handleEditWallet = () => {
-    // TODO: Navigate to edit wallet screen
-    console.log("Edit wallet:", wallet.id);
+    setIsEditWalletModalVisible(true);
   };
 
   const handleDeleteWallet = () => {
@@ -209,16 +210,6 @@ const WalletDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Wallet Notes */}
-        {wallet.description && (
-          <View style={styles.notesSection}>
-            <Text style={styles.sectionTitle}>Notes</Text>
-            <View style={styles.notesCard}>
-              <Text style={styles.notesText}>{wallet.description}</Text>
-            </View>
-          </View>
-        )}
-
         {/* Recent Transactions */}
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
@@ -262,6 +253,13 @@ const WalletDetailScreen = ({ route, navigation }) => {
         onClose={() => setIsCreateTransactionModalVisible(false)}
         wallets={allWallets}
         preSelectedWalletId={wallet.id}
+      />
+
+      {/* Wallet Modal */}
+      <WalletModal
+        visible={isEditWalletModalVisible}
+        onClose={() => setIsEditWalletModalVisible(false)}
+        wallet={wallet}
       />
 
       {/* Loading Overlay */}
@@ -381,22 +379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingVertical: 0,
   },
-  notesSection: {
-    marginBottom: 24,
-  },
-  notesCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 20,
-  },
-  notesText: {
-    fontSize: 14,
-    color: COLORS.text,
-    lineHeight: 20,
-    fontStyle: "italic",
-  },
+
   loadingOverlay: {
     position: "absolute",
     top: 0,

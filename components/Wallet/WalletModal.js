@@ -18,6 +18,7 @@ import {
   WALLET_ICONS,
 } from "../../constants/walletOptions";
 import React, { useEffect, useRef, useState } from "react";
+import { useCreateWallet, useUpdateWallet } from "../../services/useDatabase";
 
 import { COLORS } from "../../constants/colors";
 import Icon from "../UI/Icon";
@@ -26,7 +27,6 @@ import { WALLET_TYPE_METADATA } from "../../constants/Types/walletTypes";
 import WalletItem from "./WalletItem";
 import { formatCurrency } from "../../utils/helpers";
 import { generateId } from "../../utils/generateId";
-import { useCreateWallet } from "../../services/useDatabase";
 
 // Constants
 const ITEMS_PER_ROW = 6;
@@ -36,7 +36,7 @@ const calculateResponsiveDimensions = (screenWidth) => {
   const isSmallScreen = screenWidth < 350;
 
   const gridPadding = isSmallScreen ? 12 : 16;
-  const itemSpacing = isSmallScreen ? 16 : 20; // Increased from 8/12 to 16/20
+  const itemSpacing = isSmallScreen ? 16 : 20;
 
   // Calculate item size to fit exactly 6 items in one row
   const totalSpacing = itemSpacing * (ITEMS_PER_ROW - 1);
@@ -63,8 +63,10 @@ const calculateResponsiveDimensions = (screenWidth) => {
   };
 };
 
-const AddWalletModal = ({ visible, onClose }) => {
+const WalletModal = ({ visible, onClose, wallet = null }) => {
+  const isEditing = !!wallet;
   const createWalletMutation = useCreateWallet();
+  const updateWalletMutation = useUpdateWallet();
 
   // Responsive dimensions state
   const [screenDimensions, setScreenDimensions] = useState(() =>
@@ -108,9 +110,22 @@ const AddWalletModal = ({ visible, onClose }) => {
   // Effects
   useEffect(() => {
     if (visible) {
-      resetForm();
+      if (isEditing && wallet) {
+        // Initialize form with wallet data for editing
+        setFormData({
+          name: wallet.name || "",
+          balance: wallet.balance ? wallet.balance.toString() : "0",
+          type: wallet.type || "checking",
+          icon: wallet.icon || "wallet",
+          background: wallet.background || "#4A90E2",
+        });
+      } else {
+        // Reset form for adding new wallet
+        setFormData(DEFAULT_WALLET_CONFIG);
+      }
+      setErrors({});
     }
-  }, [visible]);
+  }, [visible, wallet, isEditing]);
 
   // Animation functions
   const animatePreviewChange = () => {
@@ -185,34 +200,51 @@ const AddWalletModal = ({ visible, onClose }) => {
     if (!validateForm()) return;
 
     try {
-      const walletData = {
-        id: generateId(),
-        name: formData.name.trim(),
-        balance: formData.balance ? parseFloat(formData.balance) : 0,
-        type: formData.type,
-        icon: formData.icon,
-        background: formData.background,
-      };
+      if (isEditing) {
+        // Update existing wallet
+        const walletData = {
+          ...wallet,
+          name: formData.name.trim(),
+          balance: formData.balance ? parseFloat(formData.balance) : 0,
+          type: formData.type,
+          icon: formData.icon,
+          background: formData.background,
+        };
 
-      console.log("Creating wallet with data:", walletData);
-      await createWalletMutation.mutateAsync(walletData);
+        await updateWalletMutation.mutateAsync(walletData);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Success", "Wallet updated successfully", [
+          { text: "OK", onPress: onClose },
+        ]);
+      } else {
+        // Create new wallet
+        const walletData = {
+          id: generateId(),
+          name: formData.name.trim(),
+          balance: formData.balance ? parseFloat(formData.balance) : 0,
+          type: formData.type,
+          icon: formData.icon,
+          background: formData.background,
+        };
 
-      // Success haptic feedback
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      Alert.alert("Success", "Wallet created successfully", [
-        {
-          text: "OK",
-          onPress: () => {
-            resetForm();
-            onClose();
+        await createWalletMutation.mutateAsync(walletData);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Success", "Wallet created successfully", [
+          {
+            text: "OK",
+            onPress: () => {
+              resetForm();
+              onClose();
+            },
           },
-        },
-      ]);
+        ]);
+      }
     } catch (error) {
-      // Error haptic feedback
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Error", error.message || "Failed to create wallet");
+      Alert.alert(
+        "Error",
+        error.message || `Failed to ${isEditing ? "update" : "create"} wallet`
+      );
     }
   };
 
@@ -245,6 +277,17 @@ const AddWalletModal = ({ visible, onClose }) => {
     onClose();
   };
 
+  const getTitle = () => (isEditing ? "Edit Wallet" : "Add Wallet");
+  const getSubmitText = () => {
+    if (isEditing) {
+      return updateWalletMutation.isPending ? "Updating..." : "Update Wallet";
+    }
+    return createWalletMutation.isPending ? "Creating..." : "Create Wallet";
+  };
+  const isSubmitting = isEditing
+    ? updateWalletMutation.isPending
+    : createWalletMutation.isPending;
+
   return (
     <Modal
       visible={visible}
@@ -254,7 +297,7 @@ const AddWalletModal = ({ visible, onClose }) => {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <Header
-          title="Add Wallet"
+          title={getTitle()}
           onBack={handleClose}
           style={{ paddingHorizontal: responsiveValues.headerPadding }}
         />
@@ -281,9 +324,7 @@ const AddWalletModal = ({ visible, onClose }) => {
                     balance: formData.balance
                       ? parseFloat(formData.balance)
                       : 0,
-                    type:
-                      WALLET_TYPE_METADATA[formData.type]?.label ||
-                      "Wallet Type",
+                    type: formData.type || "checking",
                     icon: formData.icon,
                     background: formData.background,
                   }}
@@ -440,7 +481,9 @@ const AddWalletModal = ({ visible, onClose }) => {
               )}
 
               <AmountInput
-                placeholder="Initial balance (optional)"
+                placeholder={
+                  isEditing ? "Balance" : "Initial balance (optional)"
+                }
                 value={formData.balance}
                 onChangeText={(value) => updateFormData("balance", value)}
                 style={[styles.input, errors.balance && styles.inputError]}
@@ -457,11 +500,9 @@ const AddWalletModal = ({ visible, onClose }) => {
         <View
           style={[styles.footer, { padding: responsiveValues.contentPadding }]}>
           <Button
-            title={
-              createWalletMutation.isPending ? "Creating..." : "Create Wallet"
-            }
+            title={getSubmitText()}
             onPress={handleSubmit}
-            disabled={createWalletMutation.isPending}
+            disabled={isSubmitting}
             style={styles.submitButton}
           />
         </View>
@@ -470,7 +511,7 @@ const AddWalletModal = ({ visible, onClose }) => {
   );
 };
 
-export default AddWalletModal;
+export default WalletModal;
 
 const styles = StyleSheet.create({
   // Layout

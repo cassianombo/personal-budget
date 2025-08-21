@@ -11,11 +11,11 @@ import { Button, Header } from "../components/UI";
 import React, { useState } from "react";
 import { useDeleteWallet, useWallets } from "../services/useDatabase";
 
-import AddWalletModal from "../components/Wallet/AddWalletModal";
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WalletItem from "../components/Wallet/WalletItem";
+import { WalletModal } from "../components/Wallet";
 import { formatCurrency } from "../utils/helpers";
 
 const WalletsScreen = ({ navigation }) => {
@@ -177,7 +177,7 @@ const WalletsScreen = ({ navigation }) => {
       </ScrollView>
 
       {/* Add Wallet Modal */}
-      <AddWalletModal
+      <WalletModal
         visible={showAddWalletModal}
         onClose={() => setShowAddWalletModal(false)}
       />
