@@ -248,14 +248,6 @@ const WalletDetailScreen = ({ route, navigation }) => {
       {/* Floating Action Button for adding transactions */}
       <FloatingActionButton onPress={handleAddTransaction} icon="plus" />
 
-      {/* Create Transaction Modal */}
-      <TransactionModal
-        visible={isCreateTransactionModalVisible}
-        onClose={() => setIsCreateTransactionModalVisible(false)}
-        wallets={allWallets}
-        preSelectedWalletId={wallet.id}
-      />
-
       {/* Wallet Modal */}
       <WalletModal
         visible={isEditWalletModalVisible}
@@ -277,6 +269,14 @@ const WalletDetailScreen = ({ route, navigation }) => {
           setEditingTransaction(transaction);
           setIsEditTransactionModalVisible(true);
         }}
+      />
+
+      {/* Create Transaction Modal */}
+      <TransactionModal
+        visible={isCreateTransactionModalVisible}
+        onClose={() => setIsCreateTransactionModalVisible(false)}
+        wallets={allWallets}
+        preSelectedWalletId={wallet.id}
       />
 
       {/* Edit Transaction Modal */}
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 4,
   },
   loadingTransactions: {
