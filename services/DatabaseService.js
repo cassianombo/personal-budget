@@ -416,6 +416,42 @@ class DatabaseService {
     }
   }
 
+  async getWallet(id) {
+    try {
+      // Ensure database is initialized
+      if (!this.isInitialized || !this.db) {
+        console.warn("Database not initialized, returning null");
+        return null;
+      }
+
+      if (!id || typeof id !== "string") {
+        throw new DatabaseError("Invalid wallet ID", "getWallet");
+      }
+
+      const result = await this.db.getFirstAsync(
+        "SELECT * FROM wallets WHERE id = ?",
+        [id]
+      );
+
+      if (!result) {
+        return null;
+      }
+
+      return {
+        id: result.id,
+        name: result.name,
+        balance: result.balance,
+        icon: result.icon,
+        background: result.background,
+        type: result.type,
+      };
+    } catch (error) {
+      console.error("Error getting wallet:", error);
+      // Return null instead of throwing error to prevent app crash
+      return null;
+    }
+  }
+
   async updateWallet(walletData) {
     try {
       const validatedWallet = this.validateInput(

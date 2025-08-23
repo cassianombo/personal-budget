@@ -1,22 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Text, View } from "react-native";
+import {
+  useBackgroundSync,
+  useDatabaseInitialization,
+} from "./services/useDatabase";
 
 import AppNavigator from "./navigation/AppNavigator";
 import { COLORS } from "./constants/colors";
 import { NavigationContainer } from "@react-navigation/native";
+import { QUERY_CONFIG } from "./services/queryConfig";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { useDatabaseInitialization } from "./services/useDatabase";
 
-// Create a client
+// Create an optimized QueryClient with centralized configuration
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (updated from cacheTime)
-    },
-  },
+  defaultOptions: QUERY_CONFIG,
 });
 
 // App content component that uses the database initialization hook
@@ -26,6 +24,9 @@ function AppContent() {
     isLoading: dbLoading,
     error: dbError,
   } = useDatabaseInitialization();
+
+  // ✅ Enable intelligent background sync
+  useBackgroundSync();
 
   // Show loading state while database initializes
   if (dbLoading || !dbInit) {
@@ -71,8 +72,6 @@ function AppContent() {
   }
 
   // Database is successfully initialized
-  console.log("Database initialization successful:", dbInit);
-
   return (
     <NavigationContainer>
       <StatusBar style="light" backgroundColor={COLORS.background} />

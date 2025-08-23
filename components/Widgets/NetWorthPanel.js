@@ -1,19 +1,76 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { COLORS } from "../../constants/colors";
-import { Title } from "../UI";
+import React from "react";
+import { useTheme } from "../../hooks/useTheme";
 
 const NetWorthPanel = ({ value, totalWallets = 0 }) => {
+  const { presets, colors } = useTheme();
+
+  // Fallback styles in case theme is not working
+  const fallbackStyles = {
+    container: {
+      backgroundColor: "#1A1A2E",
+      padding: 16,
+      borderRadius: 12,
+      marginVertical: 8,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: "#FFFFFF",
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 12,
+      color: "#A0AEC0",
+      marginBottom: 16,
+    },
+    balanceText: {
+      fontSize: 30,
+      fontWeight: "700",
+      color: "#FFFFFF",
+      marginBottom: 16,
+    },
+    statsContainer: {
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: "#2D3748",
+      alignItems: "center",
+    },
+    accountInfo: {
+      fontSize: 12,
+      color: "#A0AEC0",
+      fontWeight: "500",
+    },
+  };
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        presets.card?.base || fallbackStyles.container,
+        styles.container,
+      ]}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Title style={styles.title}>Net Worth</Title>
-          <Text style={styles.subtitle}>Total balance across all accounts</Text>
+          <Text
+            style={[presets.text?.h4 || fallbackStyles.title, styles.title]}>
+            Net Worth
+          </Text>
+          <Text
+            style={[
+              presets.text?.caption || fallbackStyles.subtitle,
+              styles.subtitle,
+            ]}>
+            Total balance across all accounts
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.balanceText}>
+      <Text
+        style={[
+          presets.text?.amountLarge || fallbackStyles.balanceText,
+          styles.balanceText,
+        ]}>
         {new Intl.NumberFormat("en-US", {
           style: "currency",
           currency: "EUR",
@@ -21,7 +78,11 @@ const NetWorthPanel = ({ value, totalWallets = 0 }) => {
       </Text>
 
       <View style={styles.statsContainer}>
-        <Text style={styles.accountInfo}>
+        <Text
+          style={[
+            presets.text?.caption || fallbackStyles.accountInfo,
+            styles.accountInfo,
+          ]}>
           {totalWallets} {totalWallets === 1 ? "account" : "accounts"}
         </Text>
       </View>
@@ -33,19 +94,7 @@ export default NetWorthPanel;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.card,
-    padding: 20,
-    borderRadius: 16,
     marginVertical: 8,
-    shadowColor: "#000",
-    alignSelf: "stretch",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
     flexDirection: "row",
@@ -60,39 +109,18 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    // Using presets.text.caption from theme
   },
   balanceText: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: COLORS.text,
     marginBottom: 16,
-  },
-  changeContainer: {
-    marginBottom: 12,
-  },
-  changeText: {
-    fontSize: 14,
-    color: COLORS.income,
-    fontWeight: "500",
   },
   statsContainer: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: "#2D3748", // border.primary color
     alignItems: "center",
   },
   accountInfo: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
     fontWeight: "500",
   },
 });

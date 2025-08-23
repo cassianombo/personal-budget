@@ -15,9 +15,11 @@ import {
 import { WalletCard, WalletModal } from "../components/Wallet";
 import {
   useDeleteWallet,
+  useSmartRefetch,
   useTransactionsByWalletId,
+  useWallet,
   useWallets,
-} from "../services/useDatabase";
+} from "../services";
 
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
@@ -28,7 +30,7 @@ import { getWalletTypeInfo } from "../constants/Types/walletTypes";
 import { useFocusEffect } from "@react-navigation/native";
 
 const WalletDetailScreen = ({ route, navigation }) => {
-  const { wallet } = route.params;
+  const { wallet: initialWallet } = route.params;
   const [isLoading, setIsLoading] = useState(false);
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
     useState(false);
@@ -41,46 +43,48 @@ const WalletDetailScreen = ({ route, navigation }) => {
     useState(false);
   const deleteWalletMutation = useDeleteWallet();
 
-  // Fetch transactions for this wallet
-  const {
-    data: walletTransactions = [],
-    isLoading: transactionsLoading,
-    error: transactionsError,
-  } = useTransactionsByWalletId(wallet.id);
-
-  // Fetch all wallets for the transaction modal and to get updated wallet data
+  // Get all wallets for transfer operations
   const { data: allWallets = [], refetch: refetchWallets } = useWallets();
 
-  // Get the updated wallet data from the wallets list
-  const updatedWallet = allWallets.find((w) => w.id === wallet.id) || wallet;
+  // ✅ Get the most up-to-date wallet data using dedicated hook
+  const { data: currentWallet = initialWallet, isLoading: walletLoading } =
+    useWallet(initialWallet.id);
 
-  // Force refetch when screen comes into focus to get updated data
+  // ✅ Smart refetch - only refetch if data is stale
+  const smartRefetchWallets = useSmartRefetch(useWallets());
+
+  // Get transactions for this specific wallet
+  const {
+    data: transactions = [],
+    isLoading: transactionsLoading,
+    error: transactionsError,
+  } = useTransactionsByWalletId(currentWallet.id);
+
+  // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
     React.useCallback(() => {
-      // Small delay to ensure navigation is complete
-      const timer = setTimeout(() => {
-        refetchWallets();
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }, [refetchWallets])
+      // ✅ Only refetch if data is stale and not currently fetching
+      if (smartRefetchWallets && !transactionsLoading && !walletLoading) {
+        smartRefetchWallets();
+      }
+    }, [smartRefetchWallets, transactionsLoading, walletLoading])
   );
 
-  const walletTypeInfo = getWalletTypeInfo(updatedWallet.type);
+  const walletTypeInfo = getWalletTypeInfo(currentWallet.type);
 
   const handleEditWallet = () => {
     setIsEditWalletModalVisible(true);
   };
 
   const handleWalletUpdated = () => {
-    // Force refetch to get updated wallet data
-    refetchWallets();
+    // ✅ Cache is already updated by the mutation, no need to refetch
+    // The component will automatically re-render with updated data
   };
 
   const handleDeleteWallet = () => {
     Alert.alert(
       "Delete Wallet",
-      `Are you sure you want to delete "${updatedWallet.name}"? This action cannot be undone.`,
+      `Are you sure you want to delete "${currentWallet.name}"? This action cannot be undone.`,
       [
         {
           text: "Cancel",
@@ -92,10 +96,10 @@ const WalletDetailScreen = ({ route, navigation }) => {
           onPress: async () => {
             setIsLoading(true);
             try {
-              await deleteWalletMutation.mutateAsync(updatedWallet.id);
+              await deleteWalletMutation.mutateAsync(currentWallet.id);
               Alert.alert(
                 "Success",
-                `Wallet "${updatedWallet.name}" has been deleted successfully.`,
+                `Wallet "${currentWallet.name}" has been deleted successfully.`,
                 [
                   {
                     text: "OK",
@@ -161,12 +165,12 @@ const WalletDetailScreen = ({ route, navigation }) => {
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
 
-    const thisYearTransactions = walletTransactions.filter((t) => {
+    const thisYearTransactions = transactions.filter((t) => {
       const date = new Date(t.date);
       return date.getFullYear() === thisYear;
     });
 
-    const thisMonthTransactions = walletTransactions.filter((t) => {
+    const thisMonthTransactions = transactions.filter((t) => {
       const date = new Date(t.date);
       return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
     });
@@ -174,7 +178,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
-    const lastMonthTransactions = walletTransactions.filter((t) => {
+    const lastMonthTransactions = transactions.filter((t) => {
       const date = new Date(t.date);
       return (
         date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear
@@ -186,7 +190,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
       thisMonth: thisMonthTransactions.length,
       lastMonth: lastMonthTransactions.length,
     };
-  }, [walletTransactions]);
+  }, [transactions]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -204,7 +208,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
         {/* Wallet Overview Card */}
         <View style={styles.walletCardContainer}>
           <WalletCard
-            wallet={updatedWallet}
+            wallet={currentWallet}
             walletTypeInfo={walletTypeInfo}
             showTypeBadge={true}
             showBalanceLabel={true}
@@ -252,7 +256,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
               </View>
             ) : (
               <TransactionList
-                transactions={walletTransactions}
+                transactions={transactions}
                 onTransactionPress={handleTransactionPress}
                 onTransactionLongPress={handleTransactionLongPress}
                 showDateHeaders={true}
@@ -273,7 +277,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
       <WalletModal
         visible={isEditWalletModalVisible}
         onClose={() => setIsEditWalletModalVisible(false)}
-        wallet={updatedWallet}
+        wallet={currentWallet}
         onWalletUpdated={handleWalletUpdated}
       />
 
@@ -298,7 +302,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
         visible={isCreateTransactionModalVisible}
         onClose={() => setIsCreateTransactionModalVisible(false)}
         wallets={allWallets}
-        preSelectedWalletId={updatedWallet.id}
+        preSelectedWalletId={currentWallet.id}
       />
 
       {/* Edit Transaction Modal */}

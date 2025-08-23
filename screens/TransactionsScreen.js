@@ -8,15 +8,18 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import {
   useDeleteTransaction,
+  useSmartRefetch,
   useTransactions,
   useWallets,
-} from "../services/useDatabase";
+} from "../services";
 
 import { COLORS } from "../constants/colors";
+import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TRANSACTION_TYPE } from "../constants/Types/transactionTypes";
+import { useFocusEffect } from "@react-navigation/native";
 
-export default function TransactionsScreen() {
+export default function TransactionsScreen({ navigation }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
@@ -31,21 +34,33 @@ export default function TransactionsScreen() {
     error,
     refetch,
   } = useTransactions();
+
+  // ✅ Smart refetch - only refetch if data is stale
+  const smartRefetch = useSmartRefetch(useTransactions());
+
+  // Force refetch when screen comes into focus ONLY if data is stale
+  useFocusEffect(
+    React.useCallback(() => {
+      // ✅ Only refetch if data is stale and not currently fetching
+      if (smartRefetch && !isLoading) {
+        smartRefetch();
+      }
+    }, [smartRefetch, isLoading])
+  );
+
+  const handleRefresh = async () => {
+    // ✅ Only refetch if data is stale
+    if (smartRefetch) {
+      await smartRefetch();
+    }
+  };
+
   const {
     data: wallets = [],
     isLoading: walletsLoading,
     error: walletsError,
   } = useWallets();
   const deleteTransactionMutation = useDeleteTransaction();
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refetch]);
 
   // Filter transactions based on selected type
   const filteredTransactions = useMemo(() => {

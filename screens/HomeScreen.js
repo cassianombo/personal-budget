@@ -5,8 +5,14 @@ import {
   Text,
   View,
 } from "react-native";
-import React, { useState } from "react";
-import { useTotalBalance, useWallets } from "../services/useDatabase";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  usePrefetchData,
+  useQueryState,
+  useSmartRefetch,
+  useTotalBalance,
+  useWallets,
+} from "../services";
 
 import { AntDesign } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
@@ -22,32 +28,35 @@ export default function HomeScreen({ navigation }) {
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
     useState(false);
 
-  const {
-    data: totalBalance,
-    isLoading: balanceLoading,
-    error: balanceError,
-  } = useTotalBalance();
-  const {
-    data: wallets,
-    isLoading: walletsLoading,
-    error: walletsError,
-    refetch: refetchWallets,
-  } = useWallets();
+  const totalBalanceQuery = useTotalBalance();
+  const walletsQuery = useWallets();
 
-  // Force refetch when screen comes into focus to get updated data
+  // ✅ Prefetch data for better UX
+  const { prefetchAll } = usePrefetchData();
+
+  // Use optimized query state management
+  const { isLoading, isError, error } = useQueryState([
+    totalBalanceQuery,
+    walletsQuery,
+  ]);
+
+  // ✅ Smart refetch - only refetch if data is stale
+  const smartRefetchWallets = useSmartRefetch(walletsQuery);
+
+  // ✅ Prefetch data when component mounts
+  useEffect(() => {
+    prefetchAll();
+  }, [prefetchAll]);
+
+  // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
     React.useCallback(() => {
-      // Small delay to ensure navigation is complete
-      const timer = setTimeout(() => {
-        refetchWallets();
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }, [refetchWallets])
+      // ✅ Only refetch if data is stale and not currently fetching
+      if (walletsQuery.isStale && !walletsQuery.isFetching) {
+        smartRefetchWallets();
+      }
+    }, [walletsQuery.isStale, walletsQuery.isFetching, smartRefetchWallets])
   );
-
-  const isLoading = balanceLoading || walletsLoading;
-  const hasError = balanceError || walletsError;
 
   if (isLoading) {
     return (
@@ -58,18 +67,19 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
-  if (hasError) {
+  if (isError) {
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
         <Text style={styles.errorText}>Error loading data</Text>
         <Text style={styles.errorSubtext}>
-          {balanceError?.message ||
-            walletsError?.message ||
-            "Please try again later"}
+          {error?.message || "Please try again later"}
         </Text>
       </SafeAreaView>
     );
   }
+
+  const totalBalance = totalBalanceQuery.data || 0;
+  const wallets = walletsQuery.data || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,14 +89,11 @@ export default function HomeScreen({ navigation }) {
           subtitle="Welcome to your Personal Budget App"
         />
 
-        <NetWorthPanel
-          value={totalBalance || 0}
-          totalWallets={wallets?.length || 0}
-        />
+        <NetWorthPanel value={totalBalance} totalWallets={wallets.length} />
 
         <WalletList
-          wallets={wallets || []}
-          isLoading={walletsLoading}
+          wallets={wallets}
+          isLoading={walletsQuery.isLoading}
           onViewAll={() => navigation.navigate("Wallets")}
           onWalletPress={(wallet) =>
             navigation.navigate("WalletDetail", { wallet })
@@ -107,7 +114,7 @@ export default function HomeScreen({ navigation }) {
       <TransactionModal
         visible={isCreateTransactionModalVisible}
         onClose={() => setIsCreateTransactionModalVisible(false)}
-        wallets={wallets || []}
+        wallets={wallets}
       />
     </SafeAreaView>
   );

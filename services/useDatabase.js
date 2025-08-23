@@ -1,8 +1,10 @@
+import { useCallback, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import databaseService from "./DatabaseService";
+import { mergeConfig } from "./queryConfig";
 
-// Query Keys
+// Query Keys - organized by domain for better cache management
 export const QUERY_KEYS = {
   WALLETS: "wallets",
   CATEGORIES: "categories",
@@ -19,12 +21,31 @@ export const useWallets = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.WALLETS],
-    queryFn: () => {
-      console.log("Fetching wallets...");
-      return databaseService.getWallets();
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: dbInit?.initialized === true, // Only run when database is ready
+    queryFn: () => databaseService.getWallets(),
+    ...mergeConfig("wallets", {
+      enabled: dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
+  });
+};
+
+// Hook to get a specific wallet with real-time updates
+export const useWallet = (walletId) => {
+  const queryClient = useQueryClient();
+  const dbInit = queryClient.getQueryData(["databaseInit"]);
+
+  return useQuery({
+    queryKey: [QUERY_KEYS.WALLETS, "detail", walletId],
+    queryFn: () => databaseService.getWallet(walletId),
+    ...mergeConfig("wallets", {
+      enabled: !!walletId && dbInit?.initialized === true,
+      keepPreviousData: true,
+      // Use existing data as placeholder to avoid loading states
+      placeholderData: () => {
+        const allWallets = queryClient.getQueryData([QUERY_KEYS.WALLETS]);
+        return allWallets?.find((w) => w.id === walletId) || null;
+      },
+    }),
   });
 };
 
@@ -33,14 +54,21 @@ export const useCreateWallet = () => {
 
   return useMutation({
     mutationFn: (walletData) => databaseService.createWallet(walletData),
-    onSuccess: () => {
-      // Invalidate and refetch wallets
-      queryClient.invalidateQueries([QUERY_KEYS.WALLETS]);
-      // Also invalidate total balance since it depends on wallets
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
+    onSuccess: (newWallet) => {
+      // ✅ Update cache optimistically
+      queryClient.setQueryData([QUERY_KEYS.WALLETS], (oldData) => [
+        ...(oldData || []),
+        newWallet,
+      ]);
+
+      // ✅ Selective invalidation
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
     },
     onError: (error) => {
-      console.error("Failed to create wallet:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -51,12 +79,35 @@ export const useUpdateWallet = () => {
   return useMutation({
     mutationFn: (wallet) => databaseService.updateWallet(wallet),
     onSuccess: (updatedWallet) => {
-      console.log("Wallet updated successfully:", updatedWallet);
-      queryClient.invalidateQueries([QUERY_KEYS.WALLETS]);
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
+      // ✅ Update cache optimistically for wallets list
+      queryClient.setQueryData(
+        [QUERY_KEYS.WALLETS],
+        (oldData) =>
+          oldData?.map((w) =>
+            w.id === updatedWallet.id ? updatedWallet : w
+          ) || []
+      );
+
+      // ✅ Update cache for any wallet-specific queries
+      queryClient.setQueryData(
+        [QUERY_KEYS.WALLETS, "detail", updatedWallet.id],
+        updatedWallet
+      );
+
+      // ✅ Selective invalidation for total balance
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
+
+      // ✅ Force re-render of components using this wallet
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.WALLETS],
+        exact: false,
+      });
     },
     onError: (error) => {
-      console.error("Failed to update wallet:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -66,14 +117,25 @@ export const useDeleteWallet = () => {
 
   return useMutation({
     mutationFn: (id) => databaseService.deleteWallet(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.WALLETS]);
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
-      // Also invalidate transactions since they reference wallets
-      queryClient.invalidateQueries([QUERY_KEYS.TRANSACTIONS]);
+    onSuccess: (_, deletedId) => {
+      // ✅ Update cache optimistically
+      queryClient.setQueryData(
+        [QUERY_KEYS.WALLETS],
+        (oldData) => oldData?.filter((w) => w.id !== deletedId) || []
+      );
+
+      // ✅ Selective invalidation
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TRANSACTIONS],
+        exact: false,
+      });
     },
     onError: (error) => {
-      console.error("Failed to delete wallet:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -86,8 +148,10 @@ export const useCategories = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.CATEGORIES],
     queryFn: () => databaseService.getCategories(),
-    staleTime: 5 * 60 * 1000, // 5 minutes - categories change less frequently
-    enabled: dbInit?.initialized === true, // Only run when database is ready
+    ...mergeConfig("categories", {
+      enabled: dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
   });
 };
 
@@ -96,11 +160,15 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: (categoryData) => databaseService.createCategory(categoryData),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.CATEGORIES]);
+    onSuccess: (newCategory) => {
+      // ✅ Update cache optimistically
+      queryClient.setQueryData([QUERY_KEYS.CATEGORIES], (oldData) => [
+        ...(oldData || []),
+        newCategory,
+      ]);
     },
     onError: (error) => {
-      console.error("Failed to create category:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -110,11 +178,18 @@ export const useUpdateCategory = () => {
 
   return useMutation({
     mutationFn: (category) => databaseService.updateCategory(category),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.CATEGORIES]);
+    onSuccess: (updatedCategory) => {
+      // ✅ Update cache optimistically
+      queryClient.setQueryData(
+        [QUERY_KEYS.CATEGORIES],
+        (oldData) =>
+          oldData?.map((c) =>
+            c.id === updatedCategory.id ? updatedCategory : c
+          ) || []
+      );
     },
     onError: (error) => {
-      console.error("Failed to update category:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -124,13 +199,21 @@ export const useDeleteCategory = () => {
 
   return useMutation({
     mutationFn: (id) => databaseService.deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.CATEGORIES]);
-      // Also invalidate transactions since they reference categories
-      queryClient.invalidateQueries([QUERY_KEYS.TRANSACTIONS]);
+    onSuccess: (_, deletedId) => {
+      // ✅ Update cache optimistically
+      queryClient.setQueryData(
+        [QUERY_KEYS.CATEGORIES],
+        (oldData) => oldData?.filter((c) => c.id !== deletedId) || []
+      );
+
+      // ✅ Selective invalidation for related transactions
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TRANSACTIONS],
+        exact: false,
+      });
     },
     onError: (error) => {
-      console.error("Failed to delete category:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -142,12 +225,11 @@ export const useTransactions = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TRANSACTIONS],
-    queryFn: () => {
-      console.log("Fetching all transactions...");
-      return databaseService.getTransactions();
-    },
-    staleTime: 1 * 60 * 1000, // 1 minute - transactions change frequently
-    enabled: dbInit?.initialized === true, // Only run when database is ready
+    queryFn: () => databaseService.getTransactions(),
+    ...mergeConfig("transactions", {
+      enabled: dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
   });
 };
 
@@ -157,12 +239,18 @@ export const useTransactionsByWalletId = (walletId) => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TRANSACTIONS, "wallet", walletId],
-    queryFn: () => {
-      console.log("Fetching transactions for wallet:", walletId);
-      return databaseService.getTransactions({ walletId });
-    },
-    staleTime: 1 * 60 * 1000, // 1 minute - transactions change frequently
-    enabled: !!walletId && dbInit?.initialized === true, // Only run when database is ready
+    queryFn: () => databaseService.getTransactions({ walletId }),
+    ...mergeConfig("transactions", {
+      enabled: !!walletId && dbInit?.initialized === true,
+      keepPreviousData: true,
+      // ✅ Use existing data as placeholder to avoid loading states
+      placeholderData: () => {
+        const allTransactions = queryClient.getQueryData([
+          QUERY_KEYS.TRANSACTIONS,
+        ]);
+        return allTransactions?.filter((t) => t.walletId === walletId) || [];
+      },
+    }),
   });
 };
 
@@ -172,12 +260,29 @@ export const useCreateTransaction = () => {
   return useMutation({
     mutationFn: (transactionData) =>
       databaseService.createTransaction(transactionData),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.TRANSACTIONS]);
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
+    onSuccess: (newTransaction) => {
+      // ✅ Update main transactions cache optimistically
+      queryClient.setQueryData([QUERY_KEYS.TRANSACTIONS], (oldData) => [
+        ...(oldData || []),
+        newTransaction,
+      ]);
+
+      // ✅ Update wallet-specific queries if they exist
+      if (newTransaction.walletId) {
+        queryClient.setQueryData(
+          [QUERY_KEYS.TRANSACTIONS, "wallet", newTransaction.walletId],
+          (oldData) => [...(oldData || []), newTransaction]
+        );
+      }
+
+      // ✅ Selective invalidation for total balance
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
     },
     onError: (error) => {
-      console.error("Failed to create transaction:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -187,12 +292,35 @@ export const useUpdateTransaction = () => {
 
   return useMutation({
     mutationFn: (transaction) => databaseService.updateTransaction(transaction),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.TRANSACTIONS]);
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
+    onSuccess: (updatedTransaction) => {
+      // ✅ Update main transactions cache optimistically
+      queryClient.setQueryData(
+        [QUERY_KEYS.TRANSACTIONS],
+        (oldData) =>
+          oldData?.map((t) =>
+            t.id === updatedTransaction.id ? updatedTransaction : t
+          ) || []
+      );
+
+      // ✅ Update wallet-specific queries if they exist
+      if (updatedTransaction.walletId) {
+        queryClient.setQueryData(
+          [QUERY_KEYS.TRANSACTIONS, "wallet", updatedTransaction.walletId],
+          (oldData) =>
+            oldData?.map((t) =>
+              t.id === updatedTransaction.id ? updatedTransaction : t
+            ) || []
+        );
+      }
+
+      // ✅ Selective invalidation for total balance
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
     },
     onError: (error) => {
-      console.error("Failed to update transaction:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -202,12 +330,36 @@ export const useDeleteTransaction = () => {
 
   return useMutation({
     mutationFn: (id) => databaseService.deleteTransaction(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries([QUERY_KEYS.TRANSACTIONS]);
-      queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
+    onSuccess: (_, deletedId) => {
+      // ✅ Update main transactions cache optimistically
+      queryClient.setQueryData(
+        [QUERY_KEYS.TRANSACTIONS],
+        (oldData) => oldData?.filter((t) => t.id !== deletedId) || []
+      );
+
+      // ✅ Update all wallet-specific queries
+      const allTransactions = queryClient.getQueryData([
+        QUERY_KEYS.TRANSACTIONS,
+      ]);
+      const deletedTransaction = allTransactions?.find(
+        (t) => t.id === deletedId
+      );
+
+      if (deletedTransaction?.walletId) {
+        queryClient.setQueryData(
+          [QUERY_KEYS.TRANSACTIONS, "wallet", deletedTransaction.walletId],
+          (oldData) => oldData?.filter((t) => t.id !== deletedId) || []
+        );
+      }
+
+      // ✅ Selective invalidation for total balance
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+        exact: true,
+      });
     },
     onError: (error) => {
-      console.error("Failed to delete transaction:", error);
+      // Silent error handling - let UI components handle display
     },
   });
 };
@@ -219,12 +371,11 @@ export const useTotalBalance = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TOTAL_BALANCE],
-    queryFn: () => {
-      console.log("Fetching total balance...");
-      return databaseService.getTotalBalance();
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: dbInit?.initialized === true, // Only run when database is ready
+    queryFn: () => databaseService.getTotalBalance(),
+    ...mergeConfig("totalBalance", {
+      enabled: dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
   });
 };
 
@@ -236,8 +387,10 @@ export const useTransactionsByCategory = (startDate, endDate) => {
     queryKey: [QUERY_KEYS.TRANSACTIONS_BY_CATEGORY, startDate, endDate],
     queryFn: () =>
       databaseService.getTransactionsByCategory(startDate, endDate),
-    enabled: !!startDate && !!endDate && dbInit?.initialized === true,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...mergeConfig("analytics", {
+      enabled: !!startDate && !!endDate && dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
   });
 };
 
@@ -248,8 +401,10 @@ export const useTransactionsByWallet = (startDate, endDate) => {
   return useQuery({
     queryKey: [QUERY_KEYS.TRANSACTIONS_BY_WALLET, startDate, endDate],
     queryFn: () => databaseService.getTransactionsByWallet(startDate, endDate),
-    enabled: !!startDate && !!endDate && dbInit?.initialized === true,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...mergeConfig("analytics", {
+      enabled: !!startDate && !!endDate && dbInit?.initialized === true,
+      keepPreviousData: true,
+    }),
   });
 };
 
@@ -259,8 +414,6 @@ export const useDatabaseInitialization = () => {
     queryKey: ["databaseInit"],
     queryFn: async () => {
       try {
-        console.log("Starting database initialization...");
-
         // Check if database service exists
         if (!databaseService || typeof databaseService.init !== "function") {
           throw new Error("Database service not available");
@@ -276,30 +429,21 @@ export const useDatabaseInitialization = () => {
           );
         }
 
-        console.log("Database initialized successfully!");
-
         return {
           initialized: true,
           timestamp: new Date().toISOString(),
           status: "success",
         };
       } catch (error) {
-        console.error("Database initialization failed:", error);
-
         // Throw the error so React Query can handle it properly
         throw new Error(`Database initialization failed: ${error.message}`);
       }
     },
-    staleTime: Infinity, // Only run once
-    gcTime: Infinity, // Updated from cacheTime to gcTime for newer React Query versions
-    retry: 2, // Retry a couple of times
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    ...mergeConfig("databaseInit"),
   });
 };
 
-// Optimistic Updates Helper
+// Optimistic Updates Helper - Enhanced version
 export const useOptimisticUpdate = (queryKey, updateFn) => {
   const queryClient = useQueryClient();
 
@@ -311,5 +455,106 @@ export const useOptimisticUpdate = (queryKey, updateFn) => {
       }
       return oldData;
     });
+  };
+};
+
+// Smart Refetch Helper - Only refetch if data is stale
+export const useSmartRefetch = (query) => {
+  return useCallback(() => {
+    if (query.isStale && !query.isFetching) {
+      query.refetch();
+    }
+  }, [query.isStale, query.isFetching, query.refetch]);
+};
+
+// Background Sync Hook - Intelligent background synchronization
+export const useBackgroundSync = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // ✅ Only sync queries that are stale and not currently fetching
+      queryClient.refetchQueries({
+        predicate: (query) =>
+          query.isStale &&
+          !query.isFetching &&
+          query.state.status === "success" &&
+          !query.queryKey.includes("databaseInit"), // Don't sync database init
+      });
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
+  return {
+    // Manual sync function
+    syncAll: () => {
+      queryClient.refetchQueries({
+        predicate: (query) =>
+          query.isStale &&
+          !query.isFetching &&
+          query.state.status === "success",
+      });
+    },
+
+    // Sync specific domain
+    syncDomain: (domain) => {
+      const domainKeys = {
+        wallets: [QUERY_KEYS.WALLETS],
+        categories: [QUERY_KEYS.CATEGORIES],
+        transactions: [QUERY_KEYS.TRANSACTIONS],
+        totalBalance: [QUERY_KEYS.TOTAL_BALANCE],
+      };
+
+      const keys = domainKeys[domain];
+      if (keys) {
+        queryClient.refetchQueries({
+          queryKey: keys,
+          predicate: (query) => query.isStale && !query.isFetching,
+        });
+      }
+    },
+  };
+};
+
+// Prefetch Hook - Intelligent data prefetching
+export const usePrefetchData = () => {
+  const queryClient = useQueryClient();
+
+  const prefetchWallets = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: [QUERY_KEYS.WALLETS],
+      queryFn: () => databaseService.getWallets(),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  }, [queryClient]);
+
+  const prefetchCategories = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: [QUERY_KEYS.CATEGORIES],
+      queryFn: () => databaseService.getCategories(),
+      staleTime: 10 * 60 * 1000, // 10 minutes
+    });
+  }, [queryClient]);
+
+  const prefetchTotalBalance = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: [QUERY_KEYS.TOTAL_BALANCE],
+      queryFn: () => databaseService.getTotalBalance(),
+      staleTime: 3 * 60 * 1000, // 3 minutes
+    });
+  }, [queryClient]);
+
+  const prefetchAll = useCallback(() => {
+    prefetchWallets();
+    prefetchCategories();
+    prefetchTotalBalance();
+  }, [prefetchWallets, prefetchCategories, prefetchTotalBalance]);
+
+  return {
+    prefetchWallets,
+    prefetchCategories,
+    prefetchTotalBalance,
+    prefetchAll,
   };
 };

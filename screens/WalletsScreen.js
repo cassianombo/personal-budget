@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Button, Header } from "../components/UI";
 import React, { useState } from "react";
-import { useDeleteWallet, useWallets } from "../services/useDatabase";
+import { useDeleteWallet, useSmartRefetch, useWallets } from "../services";
 
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
@@ -24,16 +24,17 @@ const WalletsScreen = ({ navigation }) => {
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const deleteWalletMutation = useDeleteWallet();
 
-  // Force refetch when screen comes into focus to get updated data
+  // ✅ Smart refetch - only refetch if data is stale
+  const smartRefetch = useSmartRefetch(useWallets());
+
+  // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
     React.useCallback(() => {
-      // Small delay to ensure navigation is complete
-      const timer = setTimeout(() => {
-        refetch();
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }, [refetch])
+      // ✅ Only refetch if data is stale and not currently fetching
+      if (smartRefetch && !isLoading) {
+        smartRefetch();
+      }
+    }, [smartRefetch, isLoading])
   );
 
   const totalBalance = wallets.reduce(
