@@ -16,6 +16,7 @@ import { PageHeader } from "../components/UI";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionModal from "../components/Transaction/TransactionModal";
 import WalletList from "../components/Wallet/WalletList";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function HomeScreen({ navigation }) {
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
@@ -30,7 +31,20 @@ export default function HomeScreen({ navigation }) {
     data: wallets,
     isLoading: walletsLoading,
     error: walletsError,
+    refetch: refetchWallets,
   } = useWallets();
+
+  // Force refetch when screen comes into focus to get updated data
+  useFocusEffect(
+    React.useCallback(() => {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        refetchWallets();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }, [refetchWallets])
+  );
 
   const isLoading = balanceLoading || walletsLoading;
   const hasError = balanceError || walletsError;

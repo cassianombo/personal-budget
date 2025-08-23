@@ -19,7 +19,10 @@ export const useWallets = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.WALLETS],
-    queryFn: () => databaseService.getWallets(),
+    queryFn: () => {
+      console.log("Fetching wallets...");
+      return databaseService.getWallets();
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: dbInit?.initialized === true, // Only run when database is ready
   });
@@ -47,7 +50,8 @@ export const useUpdateWallet = () => {
 
   return useMutation({
     mutationFn: (wallet) => databaseService.updateWallet(wallet),
-    onSuccess: () => {
+    onSuccess: (updatedWallet) => {
+      console.log("Wallet updated successfully:", updatedWallet);
       queryClient.invalidateQueries([QUERY_KEYS.WALLETS]);
       queryClient.invalidateQueries([QUERY_KEYS.TOTAL_BALANCE]);
     },
@@ -138,7 +142,10 @@ export const useTransactions = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TRANSACTIONS],
-    queryFn: () => databaseService.getTransactions(),
+    queryFn: () => {
+      console.log("Fetching all transactions...");
+      return databaseService.getTransactions();
+    },
     staleTime: 1 * 60 * 1000, // 1 minute - transactions change frequently
     enabled: dbInit?.initialized === true, // Only run when database is ready
   });
@@ -150,7 +157,10 @@ export const useTransactionsByWalletId = (walletId) => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TRANSACTIONS, "wallet", walletId],
-    queryFn: () => databaseService.getTransactions({ walletId }),
+    queryFn: () => {
+      console.log("Fetching transactions for wallet:", walletId);
+      return databaseService.getTransactions({ walletId });
+    },
     staleTime: 1 * 60 * 1000, // 1 minute - transactions change frequently
     enabled: !!walletId && dbInit?.initialized === true, // Only run when database is ready
   });
@@ -209,7 +219,10 @@ export const useTotalBalance = () => {
 
   return useQuery({
     queryKey: [QUERY_KEYS.TOTAL_BALANCE],
-    queryFn: () => databaseService.getTotalBalance(),
+    queryFn: () => {
+      console.log("Fetching total balance...");
+      return databaseService.getTotalBalance();
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: dbInit?.initialized === true, // Only run when database is ready
   });

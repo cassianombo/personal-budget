@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionList } from "../components/Transaction";
 import { formatCurrency } from "../utils/helpers";
 import { getWalletTypeInfo } from "../constants/Types/walletTypes";
+import { useFocusEffect } from "@react-navigation/native";
 
 const WalletDetailScreen = ({ route, navigation }) => {
   const { wallet } = route.params;
@@ -47,19 +48,39 @@ const WalletDetailScreen = ({ route, navigation }) => {
     error: transactionsError,
   } = useTransactionsByWalletId(wallet.id);
 
-  // Fetch all wallets for the transaction modal
-  const { data: allWallets = [] } = useWallets();
+  // Fetch all wallets for the transaction modal and to get updated wallet data
+  const { data: allWallets = [], refetch: refetchWallets } = useWallets();
 
-  const walletTypeInfo = getWalletTypeInfo(wallet.type);
+  // Get the updated wallet data from the wallets list
+  const updatedWallet = allWallets.find((w) => w.id === wallet.id) || wallet;
+
+  // Force refetch when screen comes into focus to get updated data
+  useFocusEffect(
+    React.useCallback(() => {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        refetchWallets();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }, [refetchWallets])
+  );
+
+  const walletTypeInfo = getWalletTypeInfo(updatedWallet.type);
 
   const handleEditWallet = () => {
     setIsEditWalletModalVisible(true);
   };
 
+  const handleWalletUpdated = () => {
+    // Force refetch to get updated wallet data
+    refetchWallets();
+  };
+
   const handleDeleteWallet = () => {
     Alert.alert(
       "Delete Wallet",
-      `Are you sure you want to delete "${wallet.name}"? This action cannot be undone.`,
+      `Are you sure you want to delete "${updatedWallet.name}"? This action cannot be undone.`,
       [
         {
           text: "Cancel",
@@ -71,10 +92,10 @@ const WalletDetailScreen = ({ route, navigation }) => {
           onPress: async () => {
             setIsLoading(true);
             try {
-              await deleteWalletMutation.mutateAsync(wallet.id);
+              await deleteWalletMutation.mutateAsync(updatedWallet.id);
               Alert.alert(
                 "Success",
-                `Wallet "${wallet.name}" has been deleted successfully.`,
+                `Wallet "${updatedWallet.name}" has been deleted successfully.`,
                 [
                   {
                     text: "OK",
@@ -183,7 +204,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
         {/* Wallet Overview Card */}
         <View style={styles.walletCardContainer}>
           <WalletCard
-            wallet={wallet}
+            wallet={updatedWallet}
             walletTypeInfo={walletTypeInfo}
             showTypeBadge={true}
             showBalanceLabel={true}
@@ -252,7 +273,8 @@ const WalletDetailScreen = ({ route, navigation }) => {
       <WalletModal
         visible={isEditWalletModalVisible}
         onClose={() => setIsEditWalletModalVisible(false)}
-        wallet={wallet}
+        wallet={updatedWallet}
+        onWalletUpdated={handleWalletUpdated}
       />
 
       {/* Transaction Detail Modal */}
@@ -276,7 +298,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
         visible={isCreateTransactionModalVisible}
         onClose={() => setIsCreateTransactionModalVisible(false)}
         wallets={allWallets}
-        preSelectedWalletId={wallet.id}
+        preSelectedWalletId={updatedWallet.id}
       />
 
       {/* Edit Transaction Modal */}

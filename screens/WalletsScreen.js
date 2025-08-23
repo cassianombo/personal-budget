@@ -17,11 +17,24 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import WalletItem from "../components/Wallet/WalletItem";
 import { WalletModal } from "../components/Wallet";
 import { formatCurrency } from "../utils/helpers";
+import { useFocusEffect } from "@react-navigation/native";
 
 const WalletsScreen = ({ navigation }) => {
   const { data: wallets = [], isLoading, error, refetch } = useWallets();
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const deleteWalletMutation = useDeleteWallet();
+
+  // Force refetch when screen comes into focus to get updated data
+  useFocusEffect(
+    React.useCallback(() => {
+      // Small delay to ensure navigation is complete
+      const timer = setTimeout(() => {
+        refetch();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }, [refetch])
+  );
 
   const totalBalance = wallets.reduce(
     (sum, wallet) => sum + (wallet.balance || 0),

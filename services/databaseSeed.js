@@ -13,7 +13,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Main Checking",
-    balance: 2500.0,
+    balance: 2000.0,
     icon: "creditcard",
     background: WALLET_BACKGROUND_COLORS[0],
     type: "debit",
@@ -21,7 +21,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Savings Account",
-    balance: 15000.0,
+    balance: 1000.0,
     icon: "wallet",
     background: WALLET_BACKGROUND_COLORS[1],
     type: "debit",
@@ -29,7 +29,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Credit Card",
-    balance: -450.0,
+    balance: -1000.0,
     icon: "home",
     background: WALLET_BACKGROUND_COLORS[2],
     type: "credit",
@@ -37,7 +37,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Cash Wallet",
-    balance: 120.0,
+    balance: 400,
     icon: "star",
     background: WALLET_BACKGROUND_COLORS[3],
     type: "cash",
@@ -45,7 +45,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Cash Wallet 2",
-    balance: 120.0,
+    balance: 500.0,
     icon: "star",
     background: WALLET_BACKGROUND_COLORS[4],
     type: "cash",
@@ -53,7 +53,7 @@ const sampleWallets = [
   {
     id: generateId(),
     name: "Cash Wallet 3",
-    balance: 120.0,
+    balance: 600.0,
     icon: "star",
     background: WALLET_BACKGROUND_COLORS[5],
     type: "cash",

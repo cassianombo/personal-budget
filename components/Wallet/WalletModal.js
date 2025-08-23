@@ -63,7 +63,7 @@ const calculateResponsiveDimensions = (screenWidth) => {
   };
 };
 
-const WalletModal = ({ visible, onClose, wallet = null }) => {
+const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   const isEditing = !!wallet;
   const createWalletMutation = useCreateWallet();
   const updateWalletMutation = useUpdateWallet();
@@ -213,9 +213,17 @@ const WalletModal = ({ visible, onClose, wallet = null }) => {
 
         await updateWalletMutation.mutateAsync(walletData);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Success", "Wallet updated successfully", [
-          { text: "OK", onPress: onClose },
-        ]);
+
+        // Call callback first, then close modal
+        if (onWalletUpdated) {
+          onWalletUpdated();
+        }
+
+        // Close modal immediately after successful update
+        onClose();
+
+        // Show success message
+        Alert.alert("Success", "Wallet updated successfully", [{ text: "OK" }]);
       } else {
         // Create new wallet
         const walletData = {
@@ -229,15 +237,18 @@ const WalletModal = ({ visible, onClose, wallet = null }) => {
 
         await createWalletMutation.mutateAsync(walletData);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Success", "Wallet created successfully", [
-          {
-            text: "OK",
-            onPress: () => {
-              resetForm();
-              onClose();
-            },
-          },
-        ]);
+
+        // Call callback first, then close modal
+        if (onWalletUpdated) {
+          onWalletUpdated();
+        }
+
+        // Close modal immediately after successful creation
+        resetForm();
+        onClose();
+
+        // Show success message
+        Alert.alert("Success", "Wallet created successfully", [{ text: "OK" }]);
       }
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
