@@ -15,7 +15,7 @@ import {
 } from "../../constants/Types/transactionTypes";
 
 import { COLORS } from "../../constants/colors";
-import Header from "../UI/Header";
+import { Header } from "../UI";
 import Icon from "../UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDeleteTransaction } from "../../services/useDatabase";

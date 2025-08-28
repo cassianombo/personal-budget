@@ -1,9 +1,9 @@
 export { default as Button } from "./Button";
-export { default as Header } from "./Header";
-export { default as HeaderButton } from "./HeaderButton";
+export { default as FloatingActionButton } from "./FloatingActionButton";
 export { default as Icon } from "./Icon";
 export { default as IconButton } from "./IconButton";
-export { default as PageHeader } from "./PageHeader";
+export { default as SettingItem } from "./SettingItem";
+export { default as SettingToggle } from "./SettingToggle";
 export { default as Title } from "./Title";
-export { default as FloatingActionButton } from "./FloatingActionButton";
+export * from "./Header";
 export * from "./Input";

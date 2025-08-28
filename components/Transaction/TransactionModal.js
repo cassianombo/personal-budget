@@ -4,7 +4,7 @@ import {
   Button,
   DatePicker,
   Header,
-  SelectedInput,
+  SelectInput,
   TextInput,
   TransactionTypeSelector,
 } from "../UI";
@@ -220,7 +220,7 @@ const TransactionModal = ({
           {/* Wallet Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Wallet</Text>
-            <SelectedInput
+            <SelectInput
               placeholder="Select wallet"
               value={formData.walletId}
               onSelect={(value) => updateFormData("walletId", value)}
@@ -267,7 +267,7 @@ const TransactionModal = ({
           {formData.type !== "transfer" ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Category</Text>
-              <SelectedInput
+              <SelectInput
                 placeholder="Select category"
                 value={formData.categoryId}
                 onSelect={(value) => updateFormData("categoryId", value)}
@@ -282,7 +282,7 @@ const TransactionModal = ({
           ) : (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Destination Wallet</Text>
-              <SelectedInput
+              <SelectInput
                 placeholder="Select destination wallet"
                 value={formData.secondWalletId}
                 onSelect={(value) => updateFormData("secondWalletId", value)}

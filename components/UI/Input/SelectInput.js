@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import { COLORS } from "../../../constants/colors";
 import Icon from "../Icon";
 
-const SelectedInput = ({
+const SelectInput = ({
   placeholder = "Select an option",
   value,
   onSelect,
@@ -228,5 +228,4 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
-export default SelectedInput;
+export default SelectInput;

@@ -1,5 +1,5 @@
-import { COLORS } from "../../constants/colors";
-import IconButton from "./IconButton";
+import { COLORS } from "../../../constants/colors";
+import IconButton from "../IconButton";
 import React from "react";
 import { StyleSheet } from "react-native";
 

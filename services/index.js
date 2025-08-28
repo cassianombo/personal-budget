@@ -16,3 +16,7 @@ export * from "./useDatabase";
 
 // Database seeding
 export * from "./databaseSeed";
+
+// Settings service and hooks
+export { default as settingsService } from "./SettingsService";
+export { useSettings } from "./useSettings";
