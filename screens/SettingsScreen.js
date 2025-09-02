@@ -7,6 +7,7 @@ import DatabaseSettings from "../components/Settings/DatabaseSettings";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getSettingsByCategory } from "../constants/settings";
+import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../services/useSettings";
 
 export default function SettingsScreen() {
@@ -18,6 +19,8 @@ export default function SettingsScreen() {
     resetToDefaults,
     exportSettings,
   } = useSettings();
+
+  const { logout } = useAuth();
 
   const settingsConfig = getSettingsByCategory();
 
@@ -63,6 +66,24 @@ export default function SettingsScreen() {
     } catch (err) {
       Alert.alert("Error", "Failed to export settings");
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logout();
+            Alert.alert("Success", "Logged out successfully");
+          } catch (err) {
+            Alert.alert("Error", "Failed to logout");
+          }
+        },
+      },
+    ]);
   };
 
   const renderSettingItem = (settingKey, settingConfig) => {
@@ -151,6 +172,17 @@ export default function SettingsScreen() {
             </View>
           )
         )}
+
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Account</Text>
+
+          <SettingItem
+            title="Logout"
+            subtitle="Sign out of your account"
+            icon="left"
+            onPress={handleLogout}
+          />
+        </View>
 
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Data Management</Text>

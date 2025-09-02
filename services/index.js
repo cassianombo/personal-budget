@@ -20,3 +20,6 @@ export * from "./databaseSeed";
 // Settings service and hooks
 export { default as settingsService } from "./SettingsService";
 export { useSettings } from "./useSettings";
+
+// Auth service
+export { default as authService } from "./AuthService";

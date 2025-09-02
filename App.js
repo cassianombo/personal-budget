@@ -6,6 +6,7 @@ import {
 } from "./services/useDatabase";
 
 import AppNavigator from "./navigation/AppNavigator";
+import { AuthProvider } from "./contexts/AuthContext";
 import { COLORS } from "./constants/colors";
 import { NavigationContainer } from "@react-navigation/native";
 import { QUERY_CONFIG } from "./services/queryConfig";
@@ -83,7 +84,9 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
