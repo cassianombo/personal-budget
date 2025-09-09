@@ -9,15 +9,12 @@ import {
   TransactionTypeSelector,
 } from "../UI";
 import React, { useEffect, useState } from "react";
-import {
-  useCategories,
-  useCreateTransaction,
-  useUpdateTransaction,
-} from "../../services/useDatabase";
 
 import { COLORS } from "../../constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { generateId } from "../../utils/generateId";
+// Database hooks removed - no longer using local database
+
 
 const TransactionModal = ({
   visible,
@@ -37,9 +34,24 @@ const TransactionModal = ({
     type: "expense", // expense, income, transfer
   });
 
-  const createTransactionMutation = useCreateTransaction();
-  const updateTransactionMutation = useUpdateTransaction();
-  const { data: categories = [], isLoading, error } = useCategories();
+  // Placeholder functions - database functionality removed
+  const createTransactionMutation = {
+    mutateAsync: async () => {
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
+  const updateTransactionMutation = {
+    mutateAsync: async () => {
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
+
+  // Placeholder data - no database functionality
+  const categories = [];
+  const isLoading = false;
+  const error = null;
 
   const isEditing = !!transaction;
 

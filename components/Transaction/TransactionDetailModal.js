@@ -18,7 +18,8 @@ import { COLORS } from "../../constants/colors";
 import { Header } from "../UI";
 import Icon from "../UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDeleteTransaction } from "../../services/useDatabase";
+
+// Database hooks removed - no longer using local database
 
 // Get screen dimensions for responsive design
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -64,7 +65,13 @@ const getModalHeight = () => {
 // Optimize the entire component with React.memo to prevent unnecessary re-renders
 const TransactionDetailModal = React.memo(
   ({ visible, transaction, onClose, onEdit }) => {
-    const deleteTransactionMutation = useDeleteTransaction();
+    // Placeholder function - database functionality removed
+    const deleteTransactionMutation = {
+      mutateAsync: async () => {
+        throw new Error("Database functionality removed");
+      },
+      isPending: false,
+    };
 
     // Memoize expensive calculations with better dependency tracking
     const transactionInfo = useMemo(

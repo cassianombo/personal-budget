@@ -1,1 +1,1 @@
-export { default as DatabaseSettings } from "./DatabaseSettings";
+// Database settings removed - no longer using local database

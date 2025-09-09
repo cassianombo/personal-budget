@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { Button, Header } from "../components/UI";
 import React, { useState } from "react";
-import { useDeleteWallet, useSmartRefetch, useWallets } from "../services";
 
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
@@ -19,13 +18,27 @@ import { WalletModal } from "../components/Wallet";
 import { formatCurrency } from "../utils/helpers";
 import { useFocusEffect } from "@react-navigation/native";
 
-const WalletsScreen = ({ navigation }) => {
-  const { data: wallets = [], isLoading, error, refetch } = useWallets();
-  const [showAddWalletModal, setShowAddWalletModal] = useState(false);
-  const deleteWalletMutation = useDeleteWallet();
+// Database hooks removed - no longer using local database
 
-  // ✅ Smart refetch - only refetch if data is stale
-  const smartRefetch = useSmartRefetch(useWallets());
+const WalletsScreen = ({ navigation }) => {
+  // Placeholder data - database functionality removed
+  const wallets = [];
+  const isLoading = false;
+  const error = null;
+  const refetch = () => {};
+
+  const [showAddWalletModal, setShowAddWalletModal] = useState(false);
+
+  // Placeholder function - database functionality removed
+  const deleteWalletMutation = {
+    mutateAsync: async () => {
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
+
+  // Placeholder function - database functionality removed
+  const smartRefetch = () => {};
 
   // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(

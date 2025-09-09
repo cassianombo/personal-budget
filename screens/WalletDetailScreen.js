@@ -13,13 +13,6 @@ import {
   TransactionModal,
 } from "../components/Transaction";
 import { WalletCard, WalletModal } from "../components/Wallet";
-import {
-  useDeleteWallet,
-  useSmartRefetch,
-  useTransactionsByWalletId,
-  useWallet,
-  useWallets,
-} from "../services";
 
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
@@ -28,6 +21,8 @@ import { TransactionList } from "../components/Transaction";
 import { formatCurrency } from "../utils/helpers";
 import { getWalletTypeInfo } from "../constants/Types/walletTypes";
 import { useFocusEffect } from "@react-navigation/native";
+
+// Database hooks removed - no longer using local database
 
 const WalletDetailScreen = ({ route, navigation }) => {
   const { wallet: initialWallet } = route.params;
@@ -41,24 +36,24 @@ const WalletDetailScreen = ({ route, navigation }) => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isEditTransactionModalVisible, setIsEditTransactionModalVisible] =
     useState(false);
-  const deleteWalletMutation = useDeleteWallet();
+  // Placeholder functions - database functionality removed
+  const deleteWalletMutation = {
+    mutateAsync: async () => {
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
 
-  // Get all wallets for transfer operations
-  const { data: allWallets = [], refetch: refetchWallets } = useWallets();
+  // Placeholder data - database functionality removed
+  const allWallets = [];
+  const refetchWallets = () => {};
+  const currentWallet = initialWallet;
+  const walletLoading = false;
+  const smartRefetchWallets = () => {};
 
-  // ✅ Get the most up-to-date wallet data using dedicated hook
-  const { data: currentWallet = initialWallet, isLoading: walletLoading } =
-    useWallet(initialWallet.id);
-
-  // ✅ Smart refetch - only refetch if data is stale
-  const smartRefetchWallets = useSmartRefetch(useWallets());
-
-  // Get transactions for this specific wallet
-  const {
-    data: transactions = [],
-    isLoading: transactionsLoading,
-    error: transactionsError,
-  } = useTransactionsByWalletId(currentWallet.id);
+  const transactions = [];
+  const transactionsLoading = false;
+  const transactionsError = null;
 
   // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(

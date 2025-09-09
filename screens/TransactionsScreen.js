@@ -6,18 +6,14 @@ import {
   TransactionModal,
 } from "../components/Transaction";
 import { useCallback, useMemo, useState } from "react";
-import {
-  useDeleteTransaction,
-  useSmartRefetch,
-  useTransactions,
-  useWallets,
-} from "../services";
 
 import { COLORS } from "../constants/colors";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TRANSACTION_TYPE } from "../constants/Types/transactionTypes";
 import { useFocusEffect } from "@react-navigation/native";
+
+// Database hooks removed - no longer using local database
 
 export default function TransactionsScreen({ navigation }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -28,15 +24,14 @@ export default function TransactionsScreen({ navigation }) {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  const {
-    data: transactions = [],
-    isLoading,
-    error,
-    refetch,
-  } = useTransactions();
+  // Placeholder data - database functionality removed
+  const transactions = [];
+  const isLoading = false;
+  const error = null;
+  const refetch = () => {};
 
-  // ✅ Smart refetch - only refetch if data is stale
-  const smartRefetch = useSmartRefetch(useTransactions());
+  // Placeholder function - database functionality removed
+  const smartRefetch = () => {};
 
   // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
@@ -55,12 +50,18 @@ export default function TransactionsScreen({ navigation }) {
     }
   };
 
-  const {
-    data: wallets = [],
-    isLoading: walletsLoading,
-    error: walletsError,
-  } = useWallets();
-  const deleteTransactionMutation = useDeleteTransaction();
+  // Placeholder data - database functionality removed
+  const wallets = [];
+  const walletsLoading = false;
+  const walletsError = null;
+
+  // Placeholder function - database functionality removed
+  const deleteTransactionMutation = {
+    mutateAsync: async () => {
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
 
   // Filter transactions based on selected type
   const filteredTransactions = useMemo(() => {

@@ -1,9 +1,7 @@
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SettingItem, SettingToggle, Title } from "../components/UI";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "../constants/colors";
-import DatabaseSettings from "../components/Settings/DatabaseSettings";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getSettingsByCategory } from "../constants/settings";
@@ -194,36 +192,7 @@ export default function SettingsScreen() {
             onPress={handleExportSettings}
           />
 
-          <SettingItem
-            title="Debug AsyncStorage"
-            subtitle="View all stored data in console"
-            icon="right"
-            onPress={async () => {
-              try {
-                // Get all AsyncStorage keys
-                const keys = await AsyncStorage.getAllKeys();
-                console.log("🔑 All AsyncStorage keys:", keys);
-
-                // Get all data
-                const data = {};
-                for (const key of keys) {
-                  const value = await AsyncStorage.getItem(key);
-                  data[key] = value;
-                }
-
-                console.log("📊 All AsyncStorage data:", data);
-
-                // Show summary in alert
-                const summary = `Keys found: ${
-                  keys.length
-                }\n\nKeys: ${keys.join(", ")}`;
-                Alert.alert("AsyncStorage Debug", summary);
-              } catch (err) {
-                console.error("Debug error:", err);
-                Alert.alert("Error", "Failed to debug AsyncStorage");
-              }
-            }}
-          />
+          {/* AsyncStorage debug removed - no longer using local database */}
 
           <SettingItem
             title="Reset to Defaults"
@@ -233,7 +202,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <DatabaseSettings />
+        {/* Database settings removed - no longer using local database */}
       </ScrollView>
     </SafeAreaView>
   );

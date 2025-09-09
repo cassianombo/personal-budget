@@ -6,13 +6,6 @@ import {
   View,
 } from "react-native";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  usePrefetchData,
-  useQueryState,
-  useSmartRefetch,
-  useTotalBalance,
-  useWallets,
-} from "../services";
 
 import { AntDesign } from "@expo/vector-icons";
 import { COLORS } from "../constants/colors";
@@ -23,16 +16,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionModal from "../components/Transaction/TransactionModal";
 import WalletList from "../components/Wallet/WalletList";
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryState } from "../services";
 
 export default function HomeScreen({ navigation }) {
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
     useState(false);
 
-  const totalBalanceQuery = useTotalBalance();
-  const walletsQuery = useWallets();
+  // Placeholder data - database functionality removed
+  const totalBalanceQuery = {
+    data: 0,
+    isLoading: false,
+    error: null,
+  };
+  const walletsQuery = {
+    data: [],
+    isLoading: false,
+    error: null,
+  };
 
-  // ✅ Prefetch data for better UX
-  const { prefetchAll } = usePrefetchData();
+  // Prefetch functionality removed - no longer using local database
 
   // Use optimized query state management
   const { isLoading, isError, error } = useQueryState([
@@ -40,23 +42,7 @@ export default function HomeScreen({ navigation }) {
     walletsQuery,
   ]);
 
-  // ✅ Smart refetch - only refetch if data is stale
-  const smartRefetchWallets = useSmartRefetch(walletsQuery);
-
-  // ✅ Prefetch data when component mounts
-  useEffect(() => {
-    prefetchAll();
-  }, [prefetchAll]);
-
-  // Force refetch when screen comes into focus ONLY if data is stale
-  useFocusEffect(
-    React.useCallback(() => {
-      // ✅ Only refetch if data is stale and not currently fetching
-      if (walletsQuery.isStale && !walletsQuery.isFetching) {
-        smartRefetchWallets();
-      }
-    }, [walletsQuery.isStale, walletsQuery.isFetching, smartRefetchWallets])
-  );
+  // Database functionality removed - no refetching needed
 
   if (isLoading) {
     return (

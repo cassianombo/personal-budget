@@ -18,7 +18,6 @@ import {
   WALLET_ICONS,
 } from "../../constants/walletOptions";
 import React, { useEffect, useRef, useState } from "react";
-import { useCreateWallet, useUpdateWallet } from "../../services/useDatabase";
 
 import { COLORS } from "../../constants/colors";
 import Icon from "../UI/Icon";
@@ -27,6 +26,9 @@ import { WALLET_TYPE_METADATA } from "../../constants/Types/walletTypes";
 import WalletItem from "./WalletItem";
 import { formatCurrency } from "../../utils/helpers";
 import { generateId } from "../../utils/generateId";
+
+// Database hooks removed - no longer using local database
+
 
 // Constants
 const ITEMS_PER_ROW = 6;
@@ -65,8 +67,22 @@ const calculateResponsiveDimensions = (screenWidth) => {
 
 const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   const isEditing = !!wallet;
-  const createWalletMutation = useCreateWallet();
-  const updateWalletMutation = useUpdateWallet();
+
+  // Placeholder functions - database functionality removed
+  const createWalletMutation = {
+    mutateAsync: async () => {
+      // Placeholder - no database functionality
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
+  const updateWalletMutation = {
+    mutateAsync: async () => {
+      // Placeholder - no database functionality
+      throw new Error("Database functionality removed");
+    },
+    isPending: false,
+  };
 
   // Responsive dimensions state
   const [screenDimensions, setScreenDimensions] = useState(() =>
