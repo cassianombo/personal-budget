@@ -7,12 +7,17 @@ import { NavigationContainer } from "@react-navigation/native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 
-// Create a basic QueryClient
+// Configuração otimizada do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      cacheTime: 10 * 60 * 1000, // 10 minutos
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });

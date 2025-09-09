@@ -5,7 +5,6 @@ import { AUTH_CONFIG, validateAuthConfig } from "../config/auth.config";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Configuração para o WebBrowser
 WebBrowser.maybeCompleteAuthSession();
 
 class AuthService {
@@ -14,21 +13,16 @@ class AuthService {
     this.refreshToken = null;
   }
 
-  // Iniciar login com Google
   async loginWithGoogle() {
     try {
-      // Usar o endpoint do backend para iniciar o fluxo OAuth
       const backendAuthUrl = `${AUTH_CONFIG.API_BASE_URL}/auth/google/login`;
 
-      // Abrir o navegador para autenticação
       const result = await WebBrowser.openAuthSessionAsync(
         backendAuthUrl,
         "personal-finances-app://auth"
       );
 
       if (result.type === "success" && result.url) {
-        // O backend já processou a autenticação e retornou os tokens
-        // Vamos extrair os tokens da resposta
         const url = new URL(result.url);
         const accessToken = url.searchParams.get("access_token");
         const refreshToken = url.searchParams.get("refresh_token");
@@ -46,7 +40,6 @@ class AuthService {
     }
   }
 
-  // Salvar tokens no AsyncStorage
   async saveTokens(accessToken, refreshToken) {
     try {
       await AsyncStorage.multiSet([
@@ -62,7 +55,6 @@ class AuthService {
     }
   }
 
-  // Carregar tokens do AsyncStorage
   async loadTokens() {
     try {
       const tokens = await AsyncStorage.multiGet([
@@ -85,7 +77,6 @@ class AuthService {
     }
   }
 
-  // Fazer logout
   async logout() {
     try {
       await AsyncStorage.multiRemove(["access_token", "refresh_token"]);
@@ -97,18 +88,15 @@ class AuthService {
     }
   }
 
-  // Verificar se o usuário está autenticado
   async isAuthenticated() {
     const tokens = await this.loadTokens();
     return tokens !== null;
   }
 
-  // Obter token de acesso
   getAccessToken() {
     return this.accessToken;
   }
 
-  // Fazer requisições autenticadas
   async authenticatedRequest(url, options = {}) {
     const token = this.getAccessToken();
 
@@ -128,7 +116,6 @@ class AuthService {
     });
   }
 
-  // Renovar token de acesso
   async refreshAccessToken() {
     try {
       if (!this.refreshToken) {

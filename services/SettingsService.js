@@ -8,7 +8,6 @@ class SettingsService {
     this.settings = null;
   }
 
-  // Initialize settings (load from storage or use defaults)
   async initialize() {
     try {
       const storedSettings = await AsyncStorage.getItem(this.SETTINGS_KEY);
@@ -28,7 +27,6 @@ class SettingsService {
     }
   }
 
-  // Get all settings
   async getAllSettings() {
     if (!this.settings) {
       await this.initialize();
@@ -36,7 +34,6 @@ class SettingsService {
     return { ...this.settings };
   }
 
-  // Get a specific setting
   async getSetting(key) {
     if (!this.settings) {
       await this.initialize();
@@ -44,13 +41,11 @@ class SettingsService {
     return this.settings[key];
   }
 
-  // Set a specific setting
   async setSetting(key, value) {
     if (!this.settings) {
       await this.initialize();
     }
 
-    // Validate setting exists
     const config = getSettingConfig(key);
     if (!config) {
       throw new Error(`Setting "${key}" not found in configuration`);
@@ -61,13 +56,11 @@ class SettingsService {
     return this.settings;
   }
 
-  // Set multiple settings at once
   async setMultipleSettings(settings) {
     if (!this.settings) {
       await this.initialize();
     }
 
-    // Validate all settings exist
     for (const key of Object.keys(settings)) {
       if (!getSettingConfig(key)) {
         throw new Error(`Setting "${key}" not found in configuration`);
@@ -79,14 +72,12 @@ class SettingsService {
     return this.settings;
   }
 
-  // Reset settings to defaults
   async resetToDefaults() {
     this.settings = { ...getAllSettings() };
     await this.saveSettings();
     return this.settings;
   }
 
-  // Save settings to AsyncStorage
   async saveSettings() {
     try {
       await AsyncStorage.setItem(
@@ -99,7 +90,6 @@ class SettingsService {
     }
   }
 
-  // Clear all settings
   async clearSettings() {
     try {
       await AsyncStorage.removeItem(this.SETTINGS_KEY);
@@ -110,7 +100,6 @@ class SettingsService {
     }
   }
 
-  // Export settings
   async exportSettings() {
     if (!this.settings) {
       await this.initialize();
@@ -118,12 +107,10 @@ class SettingsService {
     return JSON.stringify(this.settings, null, 2);
   }
 
-  // Import settings
   async importSettings(settingsJson) {
     try {
       const importedSettings = JSON.parse(settingsJson);
 
-      // Validate imported settings
       for (const key of Object.keys(importedSettings)) {
         if (!getSettingConfig(key)) {
           console.warn(`Warning: Unknown setting "${key}" will be ignored`);
@@ -139,18 +126,15 @@ class SettingsService {
     }
   }
 
-  // Get setting metadata
   getSettingMetadata(key) {
     return getSettingConfig(key);
   }
 
-  // Get all settings metadata
   getAllSettingsMetadata() {
     return getAllSettings();
   }
 }
 
-// Create singleton instance
 const settingsService = new SettingsService();
 
 export default settingsService;

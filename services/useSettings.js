@@ -7,12 +7,10 @@ export const useSettings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Load settings on mount
   useEffect(() => {
     loadSettings();
   }, []);
 
-  // Load all settings
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
@@ -27,7 +25,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Update a single setting
   const updateSetting = useCallback(async (key, value) => {
     try {
       setError(null);
@@ -41,7 +38,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Update multiple settings
   const updateMultipleSettings = useCallback(async (newSettings) => {
     try {
       setError(null);
@@ -57,7 +53,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Reset to defaults
   const resetToDefaults = useCallback(async () => {
     try {
       setError(null);
@@ -71,7 +66,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Export settings
   const exportSettings = useCallback(async () => {
     try {
       setError(null);
@@ -83,7 +77,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Import settings
   const importSettings = useCallback(async (settingsJson) => {
     try {
       setError(null);
@@ -99,7 +92,6 @@ export const useSettings = () => {
     }
   }, []);
 
-  // Get a specific setting value
   const getSetting = useCallback(
     (key, defaultValue = null) => {
       if (!settings) return defaultValue;
@@ -108,7 +100,6 @@ export const useSettings = () => {
     [settings]
   );
 
-  // Check if a setting is enabled
   const isSettingEnabled = useCallback(
     (key) => {
       if (!settings) return false;
@@ -118,12 +109,10 @@ export const useSettings = () => {
   );
 
   return {
-    // State
     settings,
     loading,
     error,
 
-    // Actions
     loadSettings,
     updateSetting,
     updateMultipleSettings,
@@ -131,11 +120,9 @@ export const useSettings = () => {
     exportSettings,
     importSettings,
 
-    // Helpers
     getSetting,
     isSettingEnabled,
 
-    // Refresh
     refresh: loadSettings,
   };
 };
