@@ -13,6 +13,7 @@ import {
   TransactionModal,
 } from "../components/Transaction";
 import { WalletCard, WalletModal } from "../components/Wallet";
+import { useAccounts, useTransactions } from "../services/api/hooks";
 
 import { COLORS } from "../constants/colors";
 import Icon from "../components/UI/Icon";
@@ -20,9 +21,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionList } from "../components/Transaction";
 import { formatCurrency } from "../utils/helpers";
 import { getWalletTypeInfo } from "../constants/Types/walletTypes";
+import { useAuth } from "../contexts/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
-
-// Database hooks removed - no longer using local database
 
 const WalletDetailScreen = ({ route, navigation }) => {
   const { wallet: initialWallet } = route.params;
@@ -36,33 +36,45 @@ const WalletDetailScreen = ({ route, navigation }) => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isEditTransactionModalVisible, setIsEditTransactionModalVisible] =
     useState(false);
-  // Placeholder functions - database functionality removed
-  const deleteWalletMutation = {
-    mutateAsync: async () => {
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
 
-  // Placeholder data - database functionality removed
-  const allWallets = [];
-  const refetchWallets = () => {};
-  const currentWallet = initialWallet;
-  const walletLoading = false;
-  const smartRefetchWallets = () => {};
+  // Auth context
+  const { userProfileData } = useAuth();
+  const userId = userProfileData?.id;
 
-  const transactions = [];
-  const transactionsLoading = false;
-  const transactionsError = null;
+  // API hooks
+  const { accountsQuery, updateAccount, deleteAccount } = useAccounts();
+  const { deleteTransaction, useTransactionsByAccount } = useTransactions();
 
-  // Force refetch when screen comes into focus ONLY if data is stale
+  // Get current wallet data from API
+  const currentWallet = useMemo(() => {
+    if (!accountsQuery.data || !initialWallet?.id) return initialWallet;
+    return (
+      accountsQuery.data.find((account) => account.id === initialWallet.id) ||
+      initialWallet
+    );
+  }, [accountsQuery.data, initialWallet]);
+
+  // Get transactions for this wallet
+  const {
+    data: transactionsData,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+    refetch: refetchTransactions,
+  } = useTransactionsByAccount(initialWallet?.id, {
+    limit: 50, // Limit to recent transactions
+  });
+
+  const transactions = transactionsData?.data || [];
+  const allWallets = accountsQuery.data || [];
+  const walletLoading = accountsQuery.isLoading;
+
+  // Force refetch when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
-      // ✅ Only refetch if data is stale and not currently fetching
-      if (smartRefetchWallets && !transactionsLoading && !walletLoading) {
-        smartRefetchWallets();
+      if (!transactionsLoading && !walletLoading) {
+        refetchTransactions();
       }
-    }, [smartRefetchWallets, transactionsLoading, walletLoading])
+    }, [refetchTransactions, transactionsLoading, walletLoading])
   );
 
   const walletTypeInfo = getWalletTypeInfo(currentWallet.type);
@@ -72,8 +84,9 @@ const WalletDetailScreen = ({ route, navigation }) => {
   };
 
   const handleWalletUpdated = () => {
-    // ✅ Cache is already updated by the mutation, no need to refetch
+    // Cache is already updated by the mutation, no need to refetch
     // The component will automatically re-render with updated data
+    setIsEditWalletModalVisible(false);
   };
 
   const handleDeleteWallet = () => {
@@ -91,7 +104,7 @@ const WalletDetailScreen = ({ route, navigation }) => {
           onPress: async () => {
             setIsLoading(true);
             try {
-              await deleteWalletMutation.mutateAsync(currentWallet.id);
+              await deleteAccount.mutateAsync(currentWallet.id);
               Alert.alert(
                 "Success",
                 `Wallet "${currentWallet.name}" has been deleted successfully.`,
@@ -105,14 +118,11 @@ const WalletDetailScreen = ({ route, navigation }) => {
             } catch (error) {
               let errorMessage = "Failed to delete wallet. Please try again.";
 
-              // Handle specific database errors
-              if (
-                error.message ===
-                "Cannot delete wallet with existing transactions"
-              ) {
+              // Handle specific API errors
+              if (error.response?.status === 400) {
                 errorMessage =
                   "Cannot delete wallet that has transactions. Please delete all transactions first or transfer them to another wallet.";
-              } else if (error.message === "Wallet not found") {
+              } else if (error.response?.status === 404) {
                 errorMessage =
                   "Wallet not found. It may have been deleted already.";
               }
@@ -145,9 +155,16 @@ const WalletDetailScreen = ({ route, navigation }) => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            // TODO: Implement delete transaction functionality
-            console.log("Delete transaction:", transactionId);
+          onPress: async () => {
+            try {
+              await deleteTransaction.mutateAsync(transactionId);
+              // Transaction will be automatically removed from the list due to cache invalidation
+            } catch (error) {
+              Alert.alert(
+                "Error",
+                "Failed to delete transaction. Please try again."
+              );
+            }
           },
         },
       ]
@@ -246,8 +263,13 @@ const WalletDetailScreen = ({ route, navigation }) => {
               <View style={styles.errorTransactions}>
                 <Text style={styles.errorText}>Error loading transactions</Text>
                 <Text style={styles.errorSubtext}>
-                  {transactionsError.message}
+                  {transactionsError.message || "Something went wrong"}
                 </Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => refetchTransactions()}>
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <TransactionList
@@ -423,6 +445,19 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: "center",
     lineHeight: 20,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignSelf: "center",
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
   },
   transactionListStyle: {
     paddingHorizontal: 0,

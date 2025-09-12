@@ -1,53 +1,40 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { API_ENDPOINTS } from "../endpoints";
 import apiService from "../ApiService";
 
-// Query keys para consistência
-export const USER_QUERY_KEYS = {
-  all: ["users"],
-  detail: (id) => ["users", id],
-  profile: ["users", "profile"],
-};
-
-// Hook para buscar perfil do usuário
-export const useUserProfile = () => {
-  return useQuery({
-    queryKey: USER_QUERY_KEYS.profile,
-    queryFn: () => apiService.get(API_ENDPOINTS.USERS.PROFILE),
-  });
-};
-
-// Hook para buscar usuário por ID
-export const useUser = (id) => {
-  return useQuery({
-    queryKey: USER_QUERY_KEYS.detail(id),
-    queryFn: () => apiService.get(API_ENDPOINTS.USERS.BY_ID(id)),
-    enabled: !!id,
-  });
-};
-
-// Hook para atualizar perfil do usuário
-export const useUpdateUserProfile = () => {
+export const useUsers = (shouldLoadUserData = false) => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (userData) =>
-      apiService.put(API_ENDPOINTS.USERS.PROFILE, userData),
+  // Perfil do usuário atual
+  const userProfile = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: () => apiService.get("/users/profile"),
+    staleTime: Infinity,
+    enabled: shouldLoadUserData,
+  });
+
+  // Opções de configurações do usuário
+  const userSettingsOptions = useQuery({
+    queryKey: ["userSettingsOptions"],
+    queryFn: () => apiService.get("/users/settings/options"),
+    staleTime: Infinity,
+    enabled: shouldLoadUserData,
+  });
+
+  // Atualizar perfil do usuário
+  const updateUserProfile = useMutation({
+    mutationFn: (userData) => apiService.put("/users/profile", userData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     },
   });
-};
 
-// Hook para deletar usuário
-export const useDeleteUser = () => {
-  const queryClient = useQueryClient();
+  return {
+    // Queries
+    userProfile,
+    userSettingsOptions,
 
-  return useMutation({
-    mutationFn: (id) => apiService.delete(API_ENDPOINTS.USERS.BY_ID(id)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.all });
-    },
-  });
+    // Mutations
+    updateUserProfile,
+  };
 };

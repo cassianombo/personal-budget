@@ -1,38 +1,31 @@
-import axios from "axios";
+import apiClient from "./apiClient";
 
-const BASE_URL = "http://localhost:7700";
-
-const apiService = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-apiService.interceptors.request.use(
-  (config) => {
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-apiService.interceptors.response.use(
-  (response) => {
+// Service layer that uses the apiClient and handles response transformation
+const apiService = {
+  get: async (url, config = {}) => {
+    const response = await apiClient.get(url, config);
     return response.data;
   },
-  (error) => {
-    if (error.response) {
-      console.error("API Error:", error.response.status, error.response.data);
-    } else if (error.request) {
-      console.error("Network Error:", error.message);
-    } else {
-      console.error("Request Error:", error.message);
-    }
-    return Promise.reject(error);
-  }
-);
+
+  post: async (url, data = {}, config = {}) => {
+    const response = await apiClient.post(url, data, config);
+    return response.data;
+  },
+
+  put: async (url, data = {}, config = {}) => {
+    const response = await apiClient.put(url, data, config);
+    return response.data;
+  },
+
+  patch: async (url, data = {}, config = {}) => {
+    const response = await apiClient.patch(url, data, config);
+    return response.data;
+  },
+
+  delete: async (url, config = {}) => {
+    const response = await apiClient.delete(url, config);
+    return response.data;
+  },
+};
 
 export default apiService;

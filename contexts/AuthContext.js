@@ -1,6 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import authService from "../services/AuthService";
+import { useUsers } from "../services/api/hooks/useUsers";
 
 const AuthContext = createContext();
 
@@ -19,7 +26,23 @@ export const AuthProvider = ({ children }) => {
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [lastLogTime, setLastLogTime] = useState(0);
 
-  // Verificar se o usuário está autenticado ao inicializar
+  const [shouldLoadUserData, setShouldLoadUserData] = useState(false);
+
+  const { userProfile } = useUsers(shouldLoadUserData);
+
+  const {
+    data: userData,
+    isLoading: isUserDataLoading,
+    refetch: fetchUserData,
+  } = userProfile;
+
+  // Log dos dados do utilizador quando chegarem
+  useEffect(() => {
+    if (userData) {
+      console.log("👤 DADOS DO UTILIZADOR RECEBIDOS:", userData);
+    }
+  }, [userData]);
+
   useEffect(() => {
     if (!hasCheckedAuth) {
       checkAuthStatus();
@@ -27,50 +50,43 @@ export const AuthProvider = ({ children }) => {
     }
   }, [hasCheckedAuth]);
 
+  useEffect(() => {
+    const handleTokenChange = () => {
+      console.log("🔄 Tokens atualizados, verificando status...");
+      checkAuthStatus();
+    };
+
+    authService.addTokenChangeListener(handleTokenChange);
+
+    return () => {
+      authService.removeTokenChangeListener(handleTokenChange);
+    };
+  }, []);
+
   const checkAuthStatus = async () => {
-    const now = Date.now();
-    const timeSinceLastLog = now - lastLogTime;
-
-    // Só fazer log se passou mais de 2 segundos desde o último log
-    if (timeSinceLastLog > 2000) {
-      console.log("🔍 VERIFICANDO STATUS DE AUTENTICAÇÃO...");
-      setLastLogTime(now);
-    }
-
     try {
       setIsLoading(true);
       const authenticated = await authService.isAuthenticated();
       setIsAuthenticated(authenticated);
 
       if (authenticated) {
-        // Carregar tokens para mostrar informações do usuário
         const tokens = await authService.loadTokens();
-        const userData = { authenticated: true, ...tokens };
-        setUser(userData);
-
-        // Print do conteúdo do usuário quando já está autenticado (só se passou tempo suficiente)
-        if (timeSinceLastLog > 2000) {
-          console.log("✅ USUÁRIO JÁ AUTENTICADO!");
-          console.log("📊 Conteúdo do usuário:", userData);
-          console.log(
-            "🎫 Access Token:",
-            tokens?.accessToken ? "Presente" : "Ausente"
-          );
-          console.log(
-            "🔄 Refresh Token:",
-            tokens?.refreshToken ? "Presente" : "Ausente"
-          );
-        }
+        const userAuthData = { authenticated: true, ...tokens };
+        setUser(userAuthData);
+        setShouldLoadUserData(true);
+        console.log("✅ Usuário autenticado");
+        console.log("🎫 ACCESS TOKEN:", tokens?.accessToken);
+        console.log("🔄 REFRESH TOKEN:", tokens?.refreshToken);
       } else {
         setUser(null);
-        if (timeSinceLastLog > 2000) {
-          console.log("❌ Usuário não autenticado");
-        }
+        setShouldLoadUserData(false);
+        console.log("❌ Usuário não autenticado");
       }
     } catch (error) {
       console.error("Erro ao verificar status de autenticação:", error);
       setIsAuthenticated(false);
       setUser(null);
+      setShouldLoadUserData(false);
     } finally {
       setIsLoading(false);
     }
@@ -83,21 +99,13 @@ export const AuthProvider = ({ children }) => {
 
       if (result) {
         setIsAuthenticated(true);
-        const userData = { authenticated: true, ...result };
-        setUser(userData);
+        const userAuthData = { authenticated: true, ...result };
+        setUser(userAuthData);
+        setShouldLoadUserData(true);
 
-        // Print do conteúdo do usuário após login
         console.log("🔐 LOGIN REALIZADO COM SUCESSO!");
-        console.log("📊 Conteúdo do usuário:", userData);
-        console.log(
-          "🎫 Access Token:",
-          result.access_token ? "Presente" : "Ausente"
-        );
-        console.log(
-          "🔄 Refresh Token:",
-          result.refresh_token ? "Presente" : "Ausente"
-        );
-
+        console.log("🎫 ACCESS TOKEN:", result.access_token);
+        console.log("🔄 REFRESH TOKEN:", result.refresh_token);
         return result;
       }
     } catch (error) {
@@ -112,16 +120,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
 
-      // Print do conteúdo do usuário antes do logout
       console.log("🚪 FAZENDO LOGOUT...");
-      console.log("📊 Usuário atual antes do logout:", user);
 
       await authService.logout();
       setIsAuthenticated(false);
       setUser(null);
+      setShouldLoadUserData(false);
 
       console.log("✅ LOGOUT REALIZADO COM SUCESSO!");
-      console.log("📊 Usuário após logout:", null);
     } catch (error) {
       console.error("Erro no logout:", error);
       throw error;
@@ -130,13 +136,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Combinar dados de autenticação e perfil do usuário
+  const userProfileData = useMemo(() => {
+    if (!isAuthenticated || !userData) return null;
+    return {
+      ...user, // Dados de autenticação (tokens)
+      profile: userData, // Dados do perfil (API)
+    };
+  }, [isAuthenticated, user, userData]);
+
   const value = {
-    user,
+    // Dados do usuário unificados
+    userProfile: userProfileData,
+    authTokens: user, // Apenas tokens de autenticação
+    userProfileData: userData, // Apenas dados do perfil da API
+
+    // Estados de autenticação
     isAuthenticated,
-    isLoading,
+    isAuthLoading: isLoading,
+    isProfileLoading: isUserDataLoading,
+    isLoading: isLoading || isUserDataLoading,
+
+    // Ações de autenticação
     loginWithGoogle,
     logout,
     checkAuthStatus,
+    refreshUserProfile: fetchUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

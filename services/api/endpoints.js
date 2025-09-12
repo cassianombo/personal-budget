@@ -27,8 +27,8 @@ export const API_ENDPOINTS = {
   TRANSACTIONS: {
     BASE: "/transactions",
     BY_ID: (id) => `/transactions/${id}`,
-    BY_ACCOUNT: (accountId) => `/transactions/account/${accountId}`,
+    // Note: Use BASE endpoint with accountId filter instead of BY_ACCOUNT
     BY_USER: (userId) => `/transactions/user/${userId}`,
-    BY_CATEGORY: (categoryId) => `/transactions/category/${categoryId}`,
+    // Note: Use BASE endpoint with categoryId filter instead of BY_CATEGORY
   },
 };

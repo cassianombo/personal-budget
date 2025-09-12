@@ -1,7 +1,12 @@
-export const formatCurrency = (amount) => {
+import { DEFAULT_USER_SETTINGS } from "../constants/defaultSettings";
+
+export const formatCurrency = (
+  amount,
+  currency = DEFAULT_USER_SETTINGS.currency
+) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency,
   }).format(amount || 0);
 };
 

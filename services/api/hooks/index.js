@@ -1,19 +1,16 @@
 export {
   useUserProfile,
   useUser,
+  useUserSettings,
   useUpdateUserProfile,
+  useUpdateUserSettings,
   useDeleteUser,
   USER_QUERY_KEYS,
 } from "./useUsers";
 
-export {
-  useAccounts,
-  useAccount,
-  useCreateAccount,
-  useUpdateAccount,
-  useDeleteAccount,
-  ACCOUNT_QUERY_KEYS,
-} from "./useAccounts";
+export { useAccounts } from "./useAccounts";
+
+export { useSettings } from "./useSettings";
 
 export {
   useCategories,

@@ -23,6 +23,7 @@
     "expo-crypto": "~14.1.5",
     "expo-haptics": "^14.1.2",
     "expo-linear-gradient": "^14.1.5",
+    "expo-secure-store": "^14.2.3",
     "expo-status-bar": "~2.2.3",
     "expo-web-browser": "~14.2.0",
     "react": "19.0.0",

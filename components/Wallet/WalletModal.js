@@ -18,6 +18,7 @@ import {
   WALLET_ICONS,
 } from "../../constants/walletOptions";
 import React, { useEffect, useRef, useState } from "react";
+import { useAccounts, useSettings } from "../../services/api/hooks";
 
 import { COLORS } from "../../constants/colors";
 import Icon from "../UI/Icon";
@@ -26,9 +27,6 @@ import { WALLET_TYPE_METADATA } from "../../constants/Types/walletTypes";
 import WalletItem from "./WalletItem";
 import { formatCurrency } from "../../utils/helpers";
 import { generateId } from "../../utils/generateId";
-
-// Database hooks removed - no longer using local database
-
 
 // Constants
 const ITEMS_PER_ROW = 6;
@@ -67,21 +65,24 @@ const calculateResponsiveDimensions = (screenWidth) => {
 
 const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   const isEditing = !!wallet;
+  const { createAccount, updateAccount } = useAccounts();
+  const { accountSettingsQuery } = useSettings();
 
-  // Placeholder functions - database functionality removed
-  const createWalletMutation = {
-    mutateAsync: async () => {
-      // Placeholder - no database functionality
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
-  const updateWalletMutation = {
-    mutateAsync: async () => {
-      // Placeholder - no database functionality
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
+  const createWalletMutation = createAccount;
+  const updateWalletMutation = updateAccount;
+
+  // Get settings data with fallbacks
+  const accountSettings = accountSettingsQuery.data || {};
+  const walletIcons =
+    accountSettings.icons || WALLET_ICONS.map((icon) => icon.name);
+  const walletBackgrounds =
+    accountSettings.backgrounds || WALLET_BACKGROUND_COLORS;
+  const walletTypes =
+    accountSettings.types || Object.keys(WALLET_TYPE_METADATA);
+
+  // Helper function to get type metadata
+  const getTypeMetadata = (type) => {
+    return WALLET_TYPE_METADATA[type] || WALLET_TYPE_METADATA.debit;
   };
 
   // Responsive dimensions state
@@ -104,24 +105,51 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   );
 
   // State
-  const [formData, setFormData] = useState(DEFAULT_WALLET_CONFIG);
+  const [formData, setFormData] = useState(() => {
+    // Use backend values if available, otherwise fallback to defaults
+    const defaultIcon =
+      walletIcons.length > 0 ? walletIcons[0] : DEFAULT_WALLET_CONFIG.icon;
+    const defaultBackground =
+      walletBackgrounds.length > 0
+        ? walletBackgrounds[0]
+        : DEFAULT_WALLET_CONFIG.background;
+    const defaultType =
+      walletTypes.length > 0 ? walletTypes[0] : DEFAULT_WALLET_CONFIG.type;
+
+    return {
+      name: "",
+      balance: "",
+      type: defaultType,
+      icon: defaultIcon,
+      background: defaultBackground,
+    };
+  });
   const [errors, setErrors] = useState({});
 
   // Animation refs
   const previewScaleAnim = useRef(new Animated.Value(1)).current;
   const previewOpacityAnim = useRef(new Animated.Value(1)).current;
-  const iconScaleAnims = useRef(
-    WALLET_ICONS.reduce((acc, icon) => {
-      acc[icon.name] = new Animated.Value(1);
-      return acc;
-    }, {})
-  ).current;
-  const colorScaleAnims = useRef(
-    WALLET_BACKGROUND_COLORS.reduce((acc, color) => {
-      acc[color] = new Animated.Value(1);
-      return acc;
-    }, {})
-  ).current;
+  const iconScaleAnims = useRef({}).current;
+  const colorScaleAnims = useRef({}).current;
+
+  // Initialize animation refs when settings are loaded
+  useEffect(() => {
+    if (accountSettingsQuery.data) {
+      // Initialize icon animations
+      walletIcons.forEach((iconName) => {
+        if (!iconScaleAnims[iconName]) {
+          iconScaleAnims[iconName] = new Animated.Value(1);
+        }
+      });
+
+      // Initialize color animations
+      walletBackgrounds.forEach((color) => {
+        if (!colorScaleAnims[color]) {
+          colorScaleAnims[color] = new Animated.Value(1);
+        }
+      });
+    }
+  }, [accountSettingsQuery.data, walletIcons, walletBackgrounds]);
 
   // Effects
   useEffect(() => {
@@ -193,7 +221,22 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   };
 
   const resetForm = () => {
-    setFormData(DEFAULT_WALLET_CONFIG);
+    const defaultIcon =
+      walletIcons.length > 0 ? walletIcons[0] : DEFAULT_WALLET_CONFIG.icon;
+    const defaultBackground =
+      walletBackgrounds.length > 0
+        ? walletBackgrounds[0]
+        : DEFAULT_WALLET_CONFIG.background;
+    const defaultType =
+      walletTypes.length > 0 ? walletTypes[0] : DEFAULT_WALLET_CONFIG.type;
+
+    setFormData({
+      name: "",
+      balance: "",
+      type: defaultType,
+      icon: defaultIcon,
+      background: defaultBackground,
+    });
     setErrors({});
   };
 
@@ -315,6 +358,36 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
     ? updateWalletMutation.isPending
     : createWalletMutation.isPending;
 
+  // Show loading state while settings are being fetched
+  if (accountSettingsQuery.isLoading) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleClose}>
+        <SafeAreaView style={styles.container}>
+          <Header
+            title={getTitle()}
+            onBack={handleClose}
+            style={{ paddingHorizontal: responsiveValues.headerPadding }}
+          />
+          <View
+            style={[
+              styles.content,
+              {
+                padding: responsiveValues.contentPadding,
+                justifyContent: "center",
+                alignItems: "center",
+              },
+            ]}>
+            <Text style={styles.sectionTitle}>Loading settings...</Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -378,15 +451,15 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
                   styles.iconGrid,
                   { paddingHorizontal: responsiveValues.gridPadding },
                 ]}>
-                {WALLET_ICONS.map((icon) => (
+                {walletIcons.map((iconName) => (
                   <Animated.View
-                    key={icon.name}
+                    key={iconName}
                     style={{
-                      transform: [{ scale: iconScaleAnims[icon.name] }],
+                      transform: [{ scale: iconScaleAnims[iconName] || 1 }],
                     }}>
                     <IconButton
-                      icon={icon.name}
-                      onPress={() => handleIconSelect(icon.name)}
+                      icon={iconName}
+                      onPress={() => handleIconSelect(iconName)}
                       style={[
                         styles.iconOption,
                         {
@@ -394,11 +467,10 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
                           height: responsiveValues.itemSize,
                           borderRadius: responsiveValues.itemSize / 4,
                         },
-                        formData.icon === icon.name &&
-                          styles.iconOptionSelected,
+                        formData.icon === iconName && styles.iconOptionSelected,
                       ]}
                       iconColor={
-                        formData.icon === icon.name
+                        formData.icon === iconName
                           ? COLORS.text
                           : COLORS.textSecondary
                       }
@@ -420,11 +492,11 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
                   styles.colorGrid,
                   { paddingHorizontal: responsiveValues.gridPadding },
                 ]}>
-                {WALLET_BACKGROUND_COLORS.map((color) => (
+                {walletBackgrounds.map((color) => (
                   <Animated.View
                     key={color}
                     style={{
-                      transform: [{ scale: colorScaleAnims[color] }],
+                      transform: [{ scale: colorScaleAnims[color] || 1 }],
                     }}>
                     <Pressable
                       style={[
@@ -465,32 +537,35 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
               ]}>
               <Text style={styles.fieldLabel}>Wallet Type</Text>
               <View style={styles.typeContainer}>
-                {Object.entries(WALLET_TYPE_METADATA).map(([type, info]) => (
-                  <Pressable
-                    key={type}
-                    style={[
-                      styles.typeOption,
-                      formData.type === type && styles.typeOptionSelected,
-                    ]}
-                    onPress={() => updateFormData("type", type)}>
-                    <Icon
-                      name={info.icon}
-                      size={20}
-                      color={
-                        formData.type === type
-                          ? COLORS.text
-                          : COLORS.textSecondary
-                      }
-                    />
-                    <Text
+                {walletTypes.map((type) => {
+                  const info = getTypeMetadata(type);
+                  return (
+                    <Pressable
+                      key={type}
                       style={[
-                        styles.typeLabel,
-                        formData.type === type && styles.typeLabelSelected,
-                      ]}>
-                      {info.label}
-                    </Text>
-                  </Pressable>
-                ))}
+                        styles.typeOption,
+                        formData.type === type && styles.typeOptionSelected,
+                      ]}
+                      onPress={() => updateFormData("type", type)}>
+                      <Icon
+                        name={info.icon}
+                        size={20}
+                        color={
+                          formData.type === type
+                            ? COLORS.text
+                            : COLORS.textSecondary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.typeLabel,
+                          formData.type === type && styles.typeLabelSelected,
+                        ]}>
+                        {info.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 

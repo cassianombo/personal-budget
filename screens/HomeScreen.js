@@ -15,32 +15,34 @@ import { PageHeader } from "../components/UI";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TransactionModal from "../components/Transaction/TransactionModal";
 import WalletList from "../components/Wallet/WalletList";
-import { useFocusEffect } from "@react-navigation/native";
+import { useAccounts } from "../services/api/hooks/useAccounts";
 import { useQueryState } from "../services";
 
 export default function HomeScreen({ navigation }) {
   const [isCreateTransactionModalVisible, setIsCreateTransactionModalVisible] =
     useState(false);
 
-  // Placeholder data - database functionality removed
-  const totalBalanceQuery = {
-    data: 0,
-    isLoading: false,
-    error: null,
-  };
-  const walletsQuery = {
-    data: [],
-    isLoading: false,
-    error: null,
-  };
+  // Use real accounts data from backend
+  const { accountsQuery } = useAccounts();
+
+  // Extract wallets from accounts data
+  const wallets = accountsQuery.data || [];
+  const totalBalance = wallets.reduce(
+    (sum, wallet) => sum + (wallet.balance || 0),
+    0
+  );
+
+  // Console.log das wallets
+  useEffect(() => {
+    if (wallets.length > 0) {
+      console.log("Wallets from backend:", wallets);
+    }
+  }, [wallets]);
 
   // Prefetch functionality removed - no longer using local database
 
   // Use optimized query state management
-  const { isLoading, isError, error } = useQueryState([
-    totalBalanceQuery,
-    walletsQuery,
-  ]);
+  const { isLoading, isError, error } = useQueryState([accountsQuery]);
 
   // Database functionality removed - no refetching needed
 
@@ -64,9 +66,6 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
-  const totalBalance = totalBalanceQuery.data || 0;
-  const wallets = walletsQuery.data || [];
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -79,7 +78,7 @@ export default function HomeScreen({ navigation }) {
 
         <WalletList
           wallets={wallets}
-          isLoading={walletsQuery.isLoading}
+          isLoading={accountsQuery.isLoading}
           onViewAll={() => navigation.navigate("Wallets")}
           onWalletPress={(wallet) =>
             navigation.navigate("WalletDetail", { wallet })

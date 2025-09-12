@@ -16,38 +16,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import WalletItem from "../components/Wallet/WalletItem";
 import { WalletModal } from "../components/Wallet";
 import { formatCurrency } from "../utils/helpers";
+import { useAccounts } from "../services/api/hooks";
 import { useFocusEffect } from "@react-navigation/native";
 
-// Database hooks removed - no longer using local database
-
 const WalletsScreen = ({ navigation }) => {
-  // Placeholder data - database functionality removed
-  const wallets = [];
-  const isLoading = false;
-  const error = null;
-  const refetch = () => {};
+  const { accountsQuery, deleteAccount } = useAccounts();
+
+  const { data: wallets = [], isLoading, error, refetch } = accountsQuery;
 
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
 
-  // Placeholder function - database functionality removed
-  const deleteWalletMutation = {
-    mutateAsync: async () => {
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
-
-  // Placeholder function - database functionality removed
-  const smartRefetch = () => {};
+  const deleteWalletMutation = deleteAccount;
 
   // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
     React.useCallback(() => {
       // ✅ Only refetch if data is stale and not currently fetching
-      if (smartRefetch && !isLoading) {
-        smartRefetch();
+      if (refetch && !isLoading) {
+        refetch();
       }
-    }, [smartRefetch, isLoading])
+    }, [refetch, isLoading])
   );
 
   const totalBalance = wallets.reduce(

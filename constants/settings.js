@@ -1,3 +1,5 @@
+import { DEFAULT_USER_SETTINGS, SETTING_OPTIONS } from "./defaultSettings";
+
 // App Settings Configuration
 export const SETTINGS_CONFIG = {
   // General Settings
@@ -5,29 +7,20 @@ export const SETTINGS_CONFIG = {
     language: {
       key: "language",
       type: "select",
-      defaultValue: "en",
+      defaultValue: DEFAULT_USER_SETTINGS.language,
       label: "Language",
       description: "App language",
       icon: "earth",
-      options: [
-        { value: "en", label: "English" },
-        { value: "pt", label: "Português" },
-        { value: "es", label: "Español" },
-      ],
+      options: SETTING_OPTIONS.language,
     },
     currency: {
       key: "currency",
       type: "select",
-      defaultValue: "USD",
+      defaultValue: DEFAULT_USER_SETTINGS.currency,
       label: "Currency",
       description: "Default currency",
       icon: "wallet",
-      options: [
-        { value: "USD", label: "USD ($)" },
-        { value: "EUR", label: "EUR (€)" },
-        { value: "GBP", label: "GBP (£)" },
-        { value: "BRL", label: "BRL (R$)" },
-      ],
+      options: SETTING_OPTIONS.currency,
     },
   },
 
@@ -36,7 +29,7 @@ export const SETTINGS_CONFIG = {
     biometricLockEnabled: {
       key: "biometricLockEnabled",
       type: "toggle",
-      defaultValue: false,
+      defaultValue: DEFAULT_USER_SETTINGS.biometricLockEnabled,
       label: "Biometric Lock",
       description: "Use fingerprint or face ID to unlock",
       icon: "lock",
