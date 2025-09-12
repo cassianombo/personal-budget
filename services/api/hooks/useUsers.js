@@ -13,14 +13,6 @@ export const useUsers = (shouldLoadUserData = false) => {
     enabled: shouldLoadUserData,
   });
 
-  // Opções de configurações do usuário
-  const userSettingsOptions = useQuery({
-    queryKey: ["userSettingsOptions"],
-    queryFn: () => apiService.get("/users/settings/options"),
-    staleTime: Infinity,
-    enabled: shouldLoadUserData,
-  });
-
   // Atualizar perfil do usuário
   const updateUserProfile = useMutation({
     mutationFn: (userData) => apiService.put("/users/profile", userData),
@@ -30,11 +22,7 @@ export const useUsers = (shouldLoadUserData = false) => {
   });
 
   return {
-    // Queries
     userProfile,
-    userSettingsOptions,
-
-    // Mutations
     updateUserProfile,
   };
 };

@@ -13,8 +13,8 @@ import React, { useEffect, useState } from "react";
 import { COLORS } from "../../constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { generateId } from "../../utils/generateId";
-// Database hooks removed - no longer using local database
-
+import { useCategories } from "../../services/api/hooks/useCategories";
+import { useTransactions } from "../../services/api/hooks/useTransactions";
 
 const TransactionModal = ({
   visible,
@@ -28,36 +28,28 @@ const TransactionModal = ({
     title: "",
     description: "",
     categoryId: "",
-    walletId: preSelectedWalletId || "",
-    secondWalletId: "",
+    accountId: preSelectedWalletId || "",
+    accountToId: "",
     date: new Date().toISOString(),
     type: "expense", // expense, income, transfer
   });
 
-  // Placeholder functions - database functionality removed
-  const createTransactionMutation = {
-    mutateAsync: async () => {
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
-  const updateTransactionMutation = {
-    mutateAsync: async () => {
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
+  // Use the transactions hook
+  const { createTransaction, updateTransaction } = useTransactions();
 
-  // Placeholder data - no database functionality
-  const categories = [];
-  const isLoading = false;
-  const error = null;
+  // Use the categories hook
+  const { categoriesQuery } = useCategories();
+
+  // Extract data from queries
+  const categories = categoriesQuery.data || [];
+  const isLoading = categoriesQuery.isLoading;
+  const error = categoriesQuery.error;
 
   const isEditing = !!transaction;
 
   const handleSubmit = async () => {
     // Simple validation - only create if all required fields are filled
-    if (!formData.amount || !formData.title.trim() || !formData.walletId) {
+    if (!formData.amount || !formData.title.trim() || !formData.accountId) {
       Alert.alert("Missing Information", "Please fill in all required fields");
       return;
     }
@@ -68,9 +60,9 @@ const TransactionModal = ({
       return;
     }
 
-    // Additional validation for second wallet (required for transfer)
-    if (formData.type === "transfer" && !formData.secondWalletId) {
-      Alert.alert("Missing Information", "Please select destination wallet");
+    // Additional validation for target account (required for transfer)
+    if (formData.type === "transfer" && !formData.accountToId) {
+      Alert.alert("Missing Information", "Please select destination account");
       return;
     }
 
@@ -81,40 +73,29 @@ const TransactionModal = ({
     }
 
     try {
-      const {
-        amount,
-        title,
-        categoryId,
-        walletId,
-        secondWalletId,
-        date,
-        type,
-      } = formData;
+      const { amount, title, categoryId, accountId, accountToId, date, type } =
+        formData;
 
       const transactionData = {
         amount: parseFloat(amount),
         title: title.trim(),
         description: formData.description.trim(),
-        categoryId: categoryId || null,
-        walletId,
-        secondWalletId: secondWalletId || null,
+        categoryId: categoryId ? parseInt(categoryId) : undefined,
+        accountId: parseInt(accountId),
+        accountToId: accountToId ? parseInt(accountToId) : undefined,
         date,
         type,
       };
 
       if (isEditing) {
         // Update existing transaction
-        await updateTransactionMutation.mutateAsync({
+        await updateTransaction.mutateAsync({
           id: transaction.id,
           ...transactionData,
         });
       } else {
         // Create new transaction
-        await createTransactionMutation.mutateAsync({
-          id: generateId(),
-          ...transactionData,
-          createdAt: new Date().toISOString(),
-        });
+        await createTransaction.mutateAsync(transactionData);
       }
 
       Alert.alert(
@@ -130,8 +111,8 @@ const TransactionModal = ({
                 title: "",
                 description: "",
                 categoryId: "",
-                walletId: "",
-                secondWalletId: "",
+                accountId: "",
+                accountToId: "",
                 date: new Date().toISOString(),
                 type: "expense",
               });
@@ -152,14 +133,14 @@ const TransactionModal = ({
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Reset second wallet when type changes to non-transfer
+    // Reset target account when type changes to non-transfer
     if (field === "type" && value !== "transfer") {
-      setFormData((prev) => ({ ...prev, secondWalletId: "" }));
+      setFormData((prev) => ({ ...prev, accountToId: "" }));
     }
   };
 
   const getFilteredWallets = () => {
-    return wallets.filter((wallet) => wallet.id !== formData.walletId);
+    return wallets.filter((wallet) => wallet.id !== formData.accountId);
   };
 
   const getFilteredCategories = () => {
@@ -184,8 +165,8 @@ const TransactionModal = ({
           title: transaction.title || "",
           description: transaction.description || "",
           categoryId: transaction.categoryId || "",
-          walletId: transaction.walletId || "",
-          secondWalletId: transaction.secondWalletId || "",
+          accountId: transaction.accountId || "",
+          accountToId: transaction.accountToId || "",
           date: transaction.date || new Date().toISOString(),
           type: transaction.type || "expense",
         });
@@ -196,8 +177,8 @@ const TransactionModal = ({
           title: "",
           description: "",
           categoryId: "",
-          walletId: preSelectedWalletId || "",
-          secondWalletId: "",
+          accountId: preSelectedWalletId || "",
+          accountToId: "",
           date: new Date().toISOString(),
           type: "expense",
         });
@@ -229,13 +210,13 @@ const TransactionModal = ({
             />
           </View>
 
-          {/* Wallet Selection */}
+          {/* Account Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Wallet</Text>
+            <Text style={styles.sectionTitle}>Account</Text>
             <SelectInput
-              placeholder="Select wallet"
-              value={formData.walletId}
-              onSelect={(value) => updateFormData("walletId", value)}
+              placeholder="Select account"
+              value={formData.accountId}
+              onSelect={(value) => updateFormData("accountId", value)}
               options={wallets.map((wallet) => ({
                 id: wallet.id,
                 name: wallet.name,
@@ -293,11 +274,11 @@ const TransactionModal = ({
             </View>
           ) : (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Destination Wallet</Text>
+              <Text style={styles.sectionTitle}>Destination Account</Text>
               <SelectInput
-                placeholder="Select destination wallet"
-                value={formData.secondWalletId}
-                onSelect={(value) => updateFormData("secondWalletId", value)}
+                placeholder="Select destination account"
+                value={formData.accountToId}
+                onSelect={(value) => updateFormData("accountToId", value)}
                 options={getFilteredWallets().map((wallet) => ({
                   id: wallet.id,
                   name: wallet.name,
@@ -325,8 +306,8 @@ const TransactionModal = ({
             title={
               (
                 isEditing
-                  ? updateTransactionMutation.isPending
-                  : createTransactionMutation.isPending
+                  ? updateTransaction.isPending
+                  : createTransaction.isPending
               )
                 ? isEditing
                   ? "Updating..."
@@ -338,8 +319,8 @@ const TransactionModal = ({
             onPress={handleSubmit}
             disabled={
               isEditing
-                ? updateTransactionMutation.isPending
-                : createTransactionMutation.isPending
+                ? updateTransaction.isPending
+                : createTransaction.isPending
             }
             style={styles.submitButton}
           />

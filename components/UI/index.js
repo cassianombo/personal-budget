@@ -2,6 +2,7 @@ export { default as Button } from "./Button";
 export { default as FloatingActionButton } from "./FloatingActionButton";
 export { default as Icon } from "./Icon";
 export { default as IconButton } from "./IconButton";
+export { default as OptionModal } from "./OptionModal";
 export { default as SettingItem } from "./SettingItem";
 export { default as SettingToggle } from "./SettingToggle";
 export { default as Title } from "./Title";

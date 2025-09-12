@@ -11,27 +11,40 @@ import { COLORS } from "../constants/colors";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TRANSACTION_TYPE } from "../constants/Types/transactionTypes";
+import { useAccounts } from "../services/api/hooks/useAccounts";
 import { useFocusEffect } from "@react-navigation/native";
-
-// Database hooks removed - no longer using local database
+import { useTransactions } from "../services/api/hooks/useTransactions";
 
 export default function TransactionsScreen({ navigation }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState("all");
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  // Placeholder data - database functionality removed
-  const transactions = [];
-  const isLoading = false;
-  const error = null;
-  const refetch = () => {};
+  // Use the transactions hook
+  const { transactionsQuery, deleteTransaction } = useTransactions();
 
-  // Placeholder function - database functionality removed
-  const smartRefetch = () => {};
+  // Use the accounts hook
+  const { accountsQuery } = useAccounts();
+
+  // Extract data from queries
+  const transactions = Array.isArray(transactionsQuery.data.data)
+    ? transactionsQuery.data.data
+    : [];
+  const isLoading = transactionsQuery.isLoading;
+  const error = transactionsQuery.error;
+  const refetch = transactionsQuery.refetch;
+
+  const wallets = accountsQuery.data ? accountsQuery.data : [];
+
+  // Smart refetch function
+  const smartRefetch = useCallback(async () => {
+    if (transactionsQuery.isStale && !isLoading) {
+      await refetch();
+    }
+  }, [transactionsQuery.isStale, isLoading, refetch]);
 
   // Force refetch when screen comes into focus ONLY if data is stale
   useFocusEffect(
@@ -50,22 +63,9 @@ export default function TransactionsScreen({ navigation }) {
     }
   };
 
-  // Placeholder data - database functionality removed
-  const wallets = [];
-  const walletsLoading = false;
-  const walletsError = null;
-
-  // Placeholder function - database functionality removed
-  const deleteTransactionMutation = {
-    mutateAsync: async () => {
-      throw new Error("Database functionality removed");
-    },
-    isPending: false,
-  };
-
   // Filter transactions based on selected type
   const filteredTransactions = useMemo(() => {
-    let filtered = transactions;
+    let filtered = transactions || [];
 
     // Filter by type
     if (selectedType !== "all") {
@@ -117,7 +117,7 @@ export default function TransactionsScreen({ navigation }) {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => deleteTransactionMutation.mutate(transactionId),
+          onPress: () => deleteTransaction.mutate(transactionId),
         },
       ]
     );
@@ -225,35 +225,38 @@ export default function TransactionsScreen({ navigation }) {
             </Text>
           ))}
         </View>
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Transaction List */}
-          {groupedTransactions.map((group) => (
-            <View key={group.date} style={styles.transactionGroup}>
-              {renderDateHeader({ item: group })}
-              {group.transactions.map((transaction) => (
-                <TransactionItem
-                  key={transaction.id}
-                  transaction={transaction}
-                  onPress={() => handleTransactionPress(transaction)}
-                  onLongPress={() => handleDeleteTransaction(transaction.id)}
-                />
-              ))}
-            </View>
-          ))}
-
-          {groupedTransactions.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>No transactions found</Text>
-              <Text style={styles.emptySubtitle}>
-                {selectedType !== "all"
-                  ? "Try adjusting your filters"
-                  : "Create your first transaction to get started"}
-              </Text>
-            </View>
-          )}
-        </ScrollView>
       </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        {/* Transaction List */}
+        {groupedTransactions.map((group) => (
+          <View key={group.date} style={styles.transactionGroup}>
+            {renderDateHeader({ item: group })}
+            {group.transactions.map((transaction) => (
+              <TransactionItem
+                key={transaction.id}
+                transaction={transaction}
+                onPress={() => handleTransactionPress(transaction)}
+                onLongPress={() => handleDeleteTransaction(transaction.id)}
+              />
+            ))}
+          </View>
+        ))}
+
+        {groupedTransactions.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No transactions found</Text>
+            <Text style={styles.emptySubtitle}>
+              {selectedType !== "all"
+                ? "Try adjusting your filters"
+                : "Create your first transaction to get started"}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
 
       <FloatingActionButton
         onPress={() => setIsModalVisible(true)}
@@ -301,12 +304,17 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
     paddingBottom: 120, // Extra space for bottom tab navigation + FAB
   },
   filterContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 20,
   },
   filterButton: {
     paddingHorizontal: 16,
