@@ -27,7 +27,7 @@ export const useAccounts = () => {
 
   const updateAccount = useMutation({
     mutationFn: ({ id, ...accountData }) =>
-      apiService.put(`/accounts/${id}`, accountData),
+      apiService.patch(`/accounts/${id}`, accountData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },

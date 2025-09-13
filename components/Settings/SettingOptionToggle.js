@@ -1,38 +1,27 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
 
 import { COLORS } from "../../constants/colors";
-import Icon from "./Icon";
+import Icon from "../UI/Icon";
 import React from "react";
 
-export default function SettingItem({
+export default function SettingOptionToggle({
   title,
   subtitle,
   icon,
-  onPress,
-  rightElement,
+  value,
+  onValueChange,
   disabled = false,
   style,
-  ...props
 }) {
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.container,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-        style,
-      ]}
-      onPress={onPress}
-      disabled={disabled}
-      {...props}>
+    <View style={[styles.container, style]}>
       <View style={styles.content}>
         {icon && (
           <View style={styles.iconContainer}>
-            <Icon name={icon} size={20} color={COLORS.primary} />
+            <Icon name={icon.name} size={20} color={icon.color} />
           </View>
         )}
-        <View
-          style={[styles.textContainer, !icon && styles.textContainerNoIcon]}>
+        <View style={styles.textContainer}>
           <Text style={[styles.title, disabled && styles.disabledText]}>
             {title}
           </Text>
@@ -43,44 +32,48 @@ export default function SettingItem({
             </Text>
           )}
         </View>
-        <View style={styles.rightElement}>
-          {rightElement || <Text style={styles.chevron}>›</Text>}
-        </View>
       </View>
-    </Pressable>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        disabled={disabled}
+        trackColor={{ false: COLORS.border, true: COLORS.primary }}
+        thumbColor={COLORS.text}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: COLORS.card,
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 6,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   iconContainer: {
-    marginRight: 16,
+    marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 24,
   },
   textContainer: {
     flex: 1,
-    marginRight: 16,
-  },
-  textContainerNoIcon: {
-    marginLeft: 0,
   },
   title: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
     color: COLORS.text,
     marginBottom: 2,
   },
@@ -88,23 +81,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     lineHeight: 18,
-  },
-  rightElement: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 20,
-  },
-  chevron: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-    fontWeight: "300",
-  },
-  pressed: {
-    opacity: 0.8,
-    backgroundColor: COLORS.input,
-  },
-  disabled: {
-    opacity: 0.5,
   },
   disabledText: {
     color: COLORS.textMuted,

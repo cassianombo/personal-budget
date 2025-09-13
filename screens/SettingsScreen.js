@@ -1,68 +1,51 @@
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SettingItem, SettingToggle, Title } from "../components/UI";
+import React, { useState } from "react";
+import { SettingOptionItem, SettingOptionToggle } from "../components/Settings";
+import { useSettings, useUsers } from "../services";
 
 import { COLORS } from "../constants/colors";
-import React from "react";
+import { OptionModal } from "../components/UI";
+import PageHeader from "../components/UI/Header/PageHeader";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getSettingsByCategory } from "../constants/settings";
 import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../services/useSettings";
 
 export default function SettingsScreen() {
-  const {
-    settings,
-    loading,
-    error,
-    updateSetting,
-    resetToDefaults,
-    exportSettings,
-  } = useSettings();
-
+  const { updateUserSettings, useUserSettings } = useUsers();
+  const { userSettingsQuery } = useSettings();
   const { logout } = useAuth();
 
-  const settingsConfig = getSettingsByCategory();
+  const { data: settings, isLoading: loading, error } = useUserSettings;
+  const { data: settingsOptions } = userSettingsQuery;
+  const isUpdatingSettings = updateUserSettings.isPending;
+  // OptionModal state
+  const [optionModalVisible, setOptionModalVisible] = useState(false);
+  const [currentSetting, setCurrentSetting] = useState(null);
+  const [modalOptions, setModalOptions] = useState([]);
 
-  const handleSettingPress = (settingName) => {
-    console.log(`Pressed: ${settingName}`);
+  const handleSelectPress = (settingKey, options) => {
+    const formattedOptions = options.map((option) => ({
+      id: option.value,
+      name: option.label,
+      value: option.value,
+    }));
+
+    setCurrentSetting({ key: settingKey });
+    setModalOptions(formattedOptions);
+    setOptionModalVisible(true);
   };
 
-  const handleToggleSetting = async (key, value) => {
-    try {
-      await updateSetting(key, value);
-    } catch (err) {
-      Alert.alert("Error", "Failed to update setting");
-    }
-  };
-
-  const handleResetSettings = () => {
-    Alert.alert(
-      "Reset Settings",
-      "Are you sure you want to reset all settings to defaults?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await resetToDefaults();
-              Alert.alert("Success", "Settings reset to defaults");
-            } catch (err) {
-              Alert.alert("Error", "Failed to reset settings");
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleExportSettings = async () => {
-    try {
-      const settingsJson = await exportSettings();
-      console.log("Settings exported:", settingsJson);
-      Alert.alert("Success", "Settings exported successfully");
-    } catch (err) {
-      Alert.alert("Error", "Failed to export settings");
+  const handleOptionSelect = async (selectedOption) => {
+    if (currentSetting) {
+      try {
+        await updateUserSettings.mutateAsync({
+          [currentSetting.key]: selectedOption.value,
+        });
+        setOptionModalVisible(false);
+        setCurrentSetting(null);
+        setModalOptions([]);
+      } catch (error) {
+        Alert.alert("Error", "Failed to update setting. Please try again.");
+      }
     }
   };
 
@@ -75,7 +58,6 @@ export default function SettingsScreen() {
         onPress: async () => {
           try {
             await logout();
-            Alert.alert("Success", "Logged out successfully");
           } catch (err) {
             Alert.alert("Error", "Failed to logout");
           }
@@ -84,51 +66,11 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const renderSettingItem = (settingKey, settingConfig) => {
-    const currentValue = settings?.[settingKey];
-
-    switch (settingConfig.type) {
-      case "toggle":
-        return (
-          <SettingToggle
-            title={settingConfig.label}
-            subtitle={settingConfig.description}
-            icon={{ name: settingConfig.icon, color: COLORS.primary }}
-            value={currentValue || settingConfig.defaultValue}
-            onValueChange={(value) => handleToggleSetting(settingKey, value)}
-          />
-        );
-
-      case "select":
-        return (
-          <SettingItem
-            title={settingConfig.label}
-            subtitle={currentValue || settingConfig.defaultValue}
-            icon={settingConfig.icon}
-            onPress={() => handleSettingPress(settingConfig.label)}
-          />
-        );
-
-      case "readonly":
-        return (
-          <SettingItem
-            title={settingConfig.label}
-            subtitle={currentValue || "Not set"}
-            icon={settingConfig.icon}
-            onPress={() => {}}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading settings...</Text>
+        <View style={styles.centerContainer}>
+          <Text style={styles.text}>Loading settings...</Text>
         </View>
       </SafeAreaView>
     );
@@ -137,8 +79,10 @@ export default function SettingsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error loading settings: {error}</Text>
+        <View style={styles.centerContainer}>
+          <Text style={[styles.text, { color: COLORS.error }]}>
+            Error loading settings: {error}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -148,33 +92,62 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.header}>
-          <Title style={styles.title}>Settings</Title>
+          <PageHeader title="Settings" />
           <Text style={styles.subtitle}>Customize your app preferences</Text>
         </View>
 
-        {/* Render settings by category */}
-        {Object.entries(settingsConfig).map(
-          ([categoryKey, categorySettings]) => (
-            <View key={categoryKey} style={styles.settingsSection}>
-              <Text style={styles.sectionTitle}>
-                {categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}
-              </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>General</Text>
 
-              {Object.entries(categorySettings).map(
-                ([settingKey, settingConfig]) => (
-                  <View key={settingKey}>
-                    {renderSettingItem(settingKey, settingConfig)}
-                  </View>
-                )
-              )}
-            </View>
-          )
-        )}
+          <SettingOptionItem
+            title="Language"
+            subtitle={settings.language}
+            icon="earth"
+            disabled={isUpdatingSettings}
+            onPress={() =>
+              handleSelectPress("language", settingsOptions?.language || [])
+            }
+          />
 
-        <View style={styles.settingsSection}>
+          <SettingOptionItem
+            title="Currency"
+            subtitle={settings.currency}
+            icon="wallet"
+            disabled={isUpdatingSettings}
+            onPress={() =>
+              handleSelectPress("currency", settingsOptions?.currency || [])
+            }
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Security</Text>
+
+          <SettingOptionToggle
+            title="Biometric Lock"
+            subtitle="Use fingerprint or face ID to unlock"
+            icon={{ name: "lock", color: COLORS.primary }}
+            value={settings?.isBiometricLocked || false}
+            disabled={isUpdatingSettings}
+            onValueChange={async (value) => {
+              try {
+                await updateUserSettings.mutateAsync({
+                  isBiometricLocked: value,
+                });
+              } catch (error) {
+                Alert.alert(
+                  "Error",
+                  "Failed to update setting. Please try again."
+                );
+              }
+            }}
+          />
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
 
-          <SettingItem
+          <SettingOptionItem
             title="Logout"
             subtitle="Sign out of your account"
             icon="left"
@@ -182,27 +155,16 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Data Management</Text>
-
-          <SettingItem
-            title="Export Settings"
-            subtitle="Download your app configuration"
-            icon="download"
-            onPress={handleExportSettings}
-          />
-
-          {/* AsyncStorage debug removed - no longer using local database */}
-
-          <SettingItem
-            title="Reset to Defaults"
-            subtitle="Restore all settings to default values"
-            icon="login"
-            onPress={handleResetSettings}
-          />
-        </View>
-
-        {/* Database settings removed - no longer using local database */}
+        {/* OptionModal for select settings */}
+        <OptionModal
+          visible={optionModalVisible}
+          onClose={() => setOptionModalVisible(false)}
+          title="Select Option"
+          options={modalOptions}
+          onSelect={handleOptionSelect}
+          selectedValue={settings?.[currentSetting?.key]}
+          showIcons={false}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -214,23 +176,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentContainer: {
-    paddingBottom: 100, // Extra space for bottom tab navigation
+    paddingBottom: 100,
   },
   header: {
     padding: 20,
     paddingBottom: 8,
-  },
-  title: {
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: COLORS.textSecondary,
     lineHeight: 22,
   },
-  settingsSection: {
+  section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -239,22 +198,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 8,
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingText: {
+  text: {
     fontSize: 18,
     color: COLORS.text,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    fontSize: 18,
-    color: COLORS.error,
   },
 });

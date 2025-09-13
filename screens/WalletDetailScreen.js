@@ -20,7 +20,6 @@ import Icon from "../components/UI/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransactionList } from "../components/Transaction";
 import { formatCurrency } from "../utils/helpers";
-import { getWalletTypeInfo } from "../constants/Types/walletTypes";
 import { useAuth } from "../contexts/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -77,7 +76,17 @@ const WalletDetailScreen = ({ route, navigation }) => {
     }, [refetchTransactions, transactionsLoading, walletLoading])
   );
 
-  const walletTypeInfo = getWalletTypeInfo(currentWallet.type);
+  const walletTypeInfo = {
+    label:
+      currentWallet.type?.charAt(0).toUpperCase() +
+        currentWallet.type?.slice(1) || "Wallet",
+    icon:
+      currentWallet.type === "credit"
+        ? "creditcard"
+        : currentWallet.type === "cash"
+        ? "wallet"
+        : "bank",
+  };
 
   const handleEditWallet = () => {
     setIsEditWalletModalVisible(true);

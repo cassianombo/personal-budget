@@ -1,4 +1,5 @@
 export {
+  useUsers,
   useUserProfile,
   useUser,
   useUserSettings,

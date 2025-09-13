@@ -1,1 +1,2 @@
-// Database settings removed - no longer using local database
+export { default as SettingOptionItem } from "./SettingOptionItem";
+export { default as SettingOptionToggle } from "./SettingOptionToggle";

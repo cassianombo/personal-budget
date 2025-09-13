@@ -1,65 +1,41 @@
+// Expo
 import * as Haptics from "expo-haptics";
 
+// React Native
 import {
   Alert,
   Animated,
   Dimensions,
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { AmountInput, Button, Header, IconButton, TextInput } from "../UI";
-import {
-  DEFAULT_WALLET_CONFIG,
-  WALLET_BACKGROUND_COLORS,
-  WALLET_ICONS,
-} from "../../constants/walletOptions";
-import React, { useEffect, useRef, useState } from "react";
-import { useAccounts, useSettings } from "../../services/api/hooks";
-
-import { COLORS } from "../../constants/colors";
-import Icon from "../UI/Icon";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { WALLET_TYPE_METADATA } from "../../constants/Types/walletTypes";
-import WalletItem from "./WalletItem";
-import { formatCurrency } from "../../utils/helpers";
-import { generateId } from "../../utils/generateId";
+// Components
+import { AmountInput, Button, Header, TextInput } from "../UI";
+// React
+import React, { useCallback, useMemo, useRef } from "react";
 
 // Constants
-const ITEMS_PER_ROW = 6;
+import { COLORS } from "../../constants/colors";
+import ColorSelector from "./ColorSelector";
+import IconSelector from "./IconSelector";
+import { SafeAreaView } from "react-native-safe-area-context";
+import TypeSelector from "./TypeSelector";
+import WalletPreview from "./WalletPreview";
+// Hooks
+import { useAccounts } from "../../services/api/hooks";
+import { useSettings } from "../../services/api/hooks";
+import useWalletForm from "../../hooks/useWalletForm";
 
-// Helper function to calculate responsive dimensions
-const calculateResponsiveDimensions = (screenWidth) => {
-  const isSmallScreen = screenWidth < 350;
-
-  const gridPadding = isSmallScreen ? 12 : 16;
-  const itemSpacing = isSmallScreen ? 16 : 20;
-
-  // Calculate item size to fit exactly 6 items in one row
-  const totalSpacing = itemSpacing * (ITEMS_PER_ROW - 1);
-  const totalPadding = gridPadding * 2;
-  const availableWidth = screenWidth - totalPadding - totalSpacing;
-  const calculatedItemSize = Math.floor(availableWidth / ITEMS_PER_ROW);
-
-  // Ensure minimum and maximum sizes
-  const minItemSize = isSmallScreen ? 40 : 44;
-  const maxItemSize = isSmallScreen ? 56 : 60;
-  const itemSize = Math.max(
-    minItemSize,
-    Math.min(maxItemSize, calculatedItemSize)
-  );
-
+// Simple responsive values based on screen width
+const getResponsiveValues = (screenWidth) => {
+  const isSmall = screenWidth < 350;
   return {
-    gridPadding,
-    itemSpacing,
-    itemSize,
-    sectionSpacing: isSmallScreen ? 12 : 10,
-    contentPadding: isSmallScreen ? 16 : 12,
-    headerPadding: isSmallScreen ? 16 : 14,
-    isSmallScreen,
+    itemSize: isSmall ? 44 : 48,
+    padding: isSmall ? 12 : 16,
+    spacing: isSmall ? 8 : 12,
   };
 };
 
@@ -71,292 +47,155 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
   const createWalletMutation = createAccount;
   const updateWalletMutation = updateAccount;
 
-  // Get settings data with fallbacks
+  // Get settings data - memoized for performance
   const accountSettings = accountSettingsQuery.data || {};
-  const walletIcons =
-    accountSettings.icons || WALLET_ICONS.map((icon) => icon.name);
-  const walletBackgrounds =
-    accountSettings.backgrounds || WALLET_BACKGROUND_COLORS;
-  const walletTypes =
-    accountSettings.types || Object.keys(WALLET_TYPE_METADATA);
-
-  // Helper function to get type metadata
-  const getTypeMetadata = (type) => {
-    return WALLET_TYPE_METADATA[type] || WALLET_TYPE_METADATA.debit;
-  };
-
-  // Responsive dimensions state
-  const [screenDimensions, setScreenDimensions] = useState(() =>
-    Dimensions.get("window")
+  const walletIcons = useMemo(
+    () => accountSettings.icons || [],
+    [accountSettings.icons]
+  );
+  const walletBackgrounds = useMemo(
+    () => accountSettings.backgrounds || [],
+    [accountSettings.backgrounds]
+  );
+  const walletTypes = useMemo(
+    () => accountSettings.types || [],
+    [accountSettings.types]
   );
 
-  // Update dimensions on orientation change
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener("change", ({ window }) => {
-      setScreenDimensions(window);
-    });
-
-    return () => subscription?.remove();
-  }, []);
-
-  // Calculate responsive values
-  const responsiveValues = calculateResponsiveDimensions(
-    screenDimensions.width
+  // Responsive dimensions - memoized for performance
+  const responsive = useMemo(
+    () => getResponsiveValues(Dimensions.get("window").width),
+    []
   );
 
-  // State
-  const [formData, setFormData] = useState(() => {
-    // Use backend values if available, otherwise fallback to defaults
-    const defaultIcon =
-      walletIcons.length > 0 ? walletIcons[0] : DEFAULT_WALLET_CONFIG.icon;
-    const defaultBackground =
-      walletBackgrounds.length > 0
-        ? walletBackgrounds[0]
-        : DEFAULT_WALLET_CONFIG.background;
-    const defaultType =
-      walletTypes.length > 0 ? walletTypes[0] : DEFAULT_WALLET_CONFIG.type;
+  // Form state management
+  const { formData, errors, updateField, validateForm, resetForm } =
+    useWalletForm(wallet, accountSettings, isEditing, visible);
 
-    return {
-      name: "",
-      balance: "",
-      type: defaultType,
-      icon: defaultIcon,
-      background: defaultBackground,
-    };
-  });
-  const [errors, setErrors] = useState({});
+  // Preview wallet data - memoized for performance
+  const previewWallet = useMemo(
+    () => ({
+      name: formData.name || "Wallet Name",
+      balance: formData.balance ? parseFloat(formData.balance) : 0,
+      type: formData.type || "checking",
+      icon: formData.icon,
+      background: formData.background,
+    }),
+    [
+      formData.name,
+      formData.balance,
+      formData.type,
+      formData.icon,
+      formData.background,
+    ]
+  );
 
-  // Animation refs
-  const previewScaleAnim = useRef(new Animated.Value(1)).current;
-  const previewOpacityAnim = useRef(new Animated.Value(1)).current;
-  const iconScaleAnims = useRef({}).current;
-  const colorScaleAnims = useRef({}).current;
+  // Simple preview animation
+  const previewAnim = useRef(new Animated.Value(1)).current;
 
-  // Initialize animation refs when settings are loaded
-  useEffect(() => {
-    if (accountSettingsQuery.data) {
-      // Initialize icon animations
-      walletIcons.forEach((iconName) => {
-        if (!iconScaleAnims[iconName]) {
-          iconScaleAnims[iconName] = new Animated.Value(1);
-        }
-      });
-
-      // Initialize color animations
-      walletBackgrounds.forEach((color) => {
-        if (!colorScaleAnims[color]) {
-          colorScaleAnims[color] = new Animated.Value(1);
-        }
-      });
-    }
-  }, [accountSettingsQuery.data, walletIcons, walletBackgrounds]);
-
-  // Effects
-  useEffect(() => {
-    if (visible) {
-      if (isEditing && wallet) {
-        // Initialize form with wallet data for editing
-        setFormData({
-          name: wallet.name || "",
-          balance: wallet.balance ? wallet.balance.toString() : "0",
-          type: wallet.type || "checking",
-          icon: wallet.icon || "wallet",
-          background: wallet.background || "#4A90E2",
-        });
-      } else {
-        // Reset form for adding new wallet
-        setFormData(DEFAULT_WALLET_CONFIG);
-      }
-      setErrors({});
-    }
-  }, [visible, wallet, isEditing]);
-
-  // Animation functions
-  const animatePreviewChange = () => {
+  // Simple preview animation - memoized for performance
+  const animatePreview = useCallback(() => {
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(previewScaleAnim, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(previewOpacityAnim, {
-          toValue: 0.7,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.spring(previewScaleAnim, {
-          toValue: 1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-        Animated.timing(previewOpacityAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  };
-
-  const animateSelection = (animationRef) => {
-    Animated.sequence([
-      Animated.timing(animationRef, {
-        toValue: 0.8,
-        duration: 100,
+      Animated.timing(previewAnim, {
+        toValue: 0.95,
+        duration: 150,
         useNativeDriver: true,
       }),
-      Animated.spring(animationRef, {
+      Animated.spring(previewAnim, {
         toValue: 1,
         tension: 300,
         friction: 10,
         useNativeDriver: true,
       }),
     ]).start();
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const resetForm = () => {
-    const defaultIcon =
-      walletIcons.length > 0 ? walletIcons[0] : DEFAULT_WALLET_CONFIG.icon;
-    const defaultBackground =
-      walletBackgrounds.length > 0
-        ? walletBackgrounds[0]
-        : DEFAULT_WALLET_CONFIG.background;
-    const defaultType =
-      walletTypes.length > 0 ? walletTypes[0] : DEFAULT_WALLET_CONFIG.type;
-
-    setFormData({
-      name: "",
-      balance: "",
-      type: defaultType,
-      icon: defaultIcon,
-      background: defaultBackground,
-    });
-    setErrors({});
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Wallet name is required";
-    }
-
-    if (formData.balance && isNaN(parseFloat(formData.balance))) {
-      newErrors.balance = "Balance must be a valid number";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [previewAnim]);
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     try {
-      if (isEditing) {
-        // Update existing wallet
-        const walletData = {
-          ...wallet,
-          name: formData.name.trim(),
-          balance: formData.balance ? parseFloat(formData.balance) : 0,
-          type: formData.type,
-          icon: formData.icon,
-          background: formData.background,
-        };
+      // Prepare wallet data - unified for both create and update
+      const walletData = {
+        ...(isEditing && { id: wallet.id }), // Include only ID when editing
+        name: formData.name.trim(),
+        balance: formData.balance ? parseFloat(formData.balance) : 0,
+        type: formData.type,
+        icon: formData.icon,
+        background: formData.background,
+      };
 
-        await updateWalletMutation.mutateAsync(walletData);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Use the appropriate mutation
+      const mutation = isEditing ? updateWalletMutation : createWalletMutation;
+      await mutation.mutateAsync(walletData);
 
-        // Call callback first, then close modal
-        if (onWalletUpdated) {
-          onWalletUpdated();
-        }
+      // Success feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // Close modal immediately after successful update
-        onClose();
-
-        // Show success message
-        Alert.alert("Success", "Wallet updated successfully", [{ text: "OK" }]);
-      } else {
-        // Create new wallet
-        const walletData = {
-          id: generateId(),
-          name: formData.name.trim(),
-          balance: formData.balance ? parseFloat(formData.balance) : 0,
-          type: formData.type,
-          icon: formData.icon,
-          background: formData.background,
-        };
-
-        await createWalletMutation.mutateAsync(walletData);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        // Call callback first, then close modal
-        if (onWalletUpdated) {
-          onWalletUpdated();
-        }
-
-        // Close modal immediately after successful creation
-        resetForm();
-        onClose();
-
-        // Show success message
-        Alert.alert("Success", "Wallet created successfully", [{ text: "OK" }]);
+      // Callback and cleanup
+      if (onWalletUpdated) {
+        onWalletUpdated();
       }
+
+      if (!isEditing) {
+        resetForm();
+      }
+      onClose();
+
+      // Success message
+      const action = isEditing ? "updated" : "created";
+      Alert.alert("Success", `Wallet ${action} successfully`, [{ text: "OK" }]);
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        "Error",
-        error.message || `Failed to ${isEditing ? "update" : "create"} wallet`
-      );
+      const action = isEditing ? "update" : "create";
+      Alert.alert("Error", error.message || `Failed to ${action} wallet`);
     }
   };
 
-  const updateFormData = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const updateFormData = useCallback(
+    (field, value) => {
+      updateField(field, value);
 
-    // Animate preview change for visual fields
-    if (["icon", "background", "type", "name"].includes(field)) {
-      animatePreviewChange();
-    }
+      // Animate preview only for visual changes
+      if (["icon", "background", "type"].includes(field)) {
+        animatePreview();
+      }
+    },
+    [updateField, animatePreview]
+  );
 
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
+  const handleIconSelect = useCallback(
+    (iconName) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateFormData("icon", iconName);
+    },
+    [updateFormData]
+  );
 
-  const handleIconSelect = (iconName) => {
-    animateSelection(iconScaleAnims[iconName]);
-    updateFormData("icon", iconName);
-  };
-
-  const handleColorSelect = (color) => {
-    animateSelection(colorScaleAnims[color]);
-    updateFormData("background", color);
-  };
+  const handleColorSelect = useCallback(
+    (color) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      updateFormData("background", color);
+    },
+    [updateFormData]
+  );
 
   const handleClose = () => {
     resetForm();
     onClose();
   };
 
-  const getTitle = () => (isEditing ? "Edit Wallet" : "Add Wallet");
-  const getSubmitText = () => {
-    if (isEditing) {
-      return updateWalletMutation.isPending ? "Updating..." : "Update Wallet";
-    }
-    return createWalletMutation.isPending ? "Creating..." : "Create Wallet";
-  };
+  // Simple inline values
+  const title = isEditing ? "Edit Wallet" : "Add Wallet";
   const isSubmitting = isEditing
     ? updateWalletMutation.isPending
     : createWalletMutation.isPending;
+  const submitText = isSubmitting
+    ? isEditing
+      ? "Updating..."
+      : "Creating..."
+    : isEditing
+    ? "Update Wallet"
+    : "Create Wallet";
 
   // Show loading state while settings are being fetched
   if (accountSettingsQuery.isLoading) {
@@ -368,15 +207,15 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
         onRequestClose={handleClose}>
         <SafeAreaView style={styles.container}>
           <Header
-            title={getTitle()}
+            title={title}
             onBack={handleClose}
-            style={{ paddingHorizontal: responsiveValues.headerPadding }}
+            style={{ paddingHorizontal: responsive.padding }}
           />
           <View
             style={[
               styles.content,
               {
-                padding: responsiveValues.contentPadding,
+                padding: responsive.padding,
                 justifyContent: "center",
                 alignItems: "center",
               },
@@ -397,177 +236,47 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <Header
-          title={getTitle()}
+          title={title}
           onBack={handleClose}
-          style={{ paddingHorizontal: responsiveValues.headerPadding }}
+          style={{ paddingHorizontal: responsive.padding }}
         />
 
         <ScrollView
-          style={[styles.content, { padding: responsiveValues.contentPadding }]}
+          style={[styles.content, { padding: responsive.padding }]}
           showsVerticalScrollIndicator={false}>
           {/* Wallet Preview */}
-          <View
-            style={[
-              styles.previewSection,
-              { marginBottom: responsiveValues.sectionSpacing },
-            ]}>
-            <Text style={styles.sectionTitle}>Preview</Text>
-            <View style={styles.previewContainer}>
-              <Animated.View
-                style={{
-                  transform: [{ scale: previewScaleAnim }],
-                  opacity: previewOpacityAnim,
-                }}>
-                <WalletItem
-                  wallet={{
-                    name: formData.name || "Wallet Name",
-                    balance: formData.balance
-                      ? parseFloat(formData.balance)
-                      : 0,
-                    type: formData.type || "checking",
-                    icon: formData.icon,
-                    background: formData.background,
-                  }}
-                />
-              </Animated.View>
-            </View>
-          </View>
+          <WalletPreview
+            wallet={previewWallet}
+            animation={previewAnim}
+            responsive={responsive}
+          />
 
           {/* Form Fields */}
           <View
-            style={[
-              styles.formSection,
-              { marginBottom: responsiveValues.sectionSpacing },
-            ]}>
+            style={[styles.formSection, { marginBottom: responsive.spacing }]}>
             {/* Icon Selector */}
-            <View
-              style={[
-                styles.iconSection,
-                { marginBottom: responsiveValues.sectionSpacing },
-              ]}>
-              <Text style={styles.fieldLabel}>Choose Icon</Text>
-              <View
-                style={[
-                  styles.iconGrid,
-                  { paddingHorizontal: responsiveValues.gridPadding },
-                ]}>
-                {walletIcons.map((iconName) => (
-                  <Animated.View
-                    key={iconName}
-                    style={{
-                      transform: [{ scale: iconScaleAnims[iconName] || 1 }],
-                    }}>
-                    <IconButton
-                      icon={iconName}
-                      onPress={() => handleIconSelect(iconName)}
-                      style={[
-                        styles.iconOption,
-                        {
-                          width: responsiveValues.itemSize,
-                          height: responsiveValues.itemSize,
-                          borderRadius: responsiveValues.itemSize / 4,
-                        },
-                        formData.icon === iconName && styles.iconOptionSelected,
-                      ]}
-                      iconColor={
-                        formData.icon === iconName
-                          ? COLORS.text
-                          : COLORS.textSecondary
-                      }
-                    />
-                  </Animated.View>
-                ))}
-              </View>
-            </View>
+            <IconSelector
+              icons={walletIcons}
+              selected={formData.icon}
+              onSelect={handleIconSelect}
+              responsive={responsive}
+            />
 
             {/* Background Color Selector */}
-            <View
-              style={[
-                styles.colorSection,
-                { marginBottom: responsiveValues.sectionSpacing },
-              ]}>
-              <Text style={styles.fieldLabel}>Choose Color</Text>
-              <View
-                style={[
-                  styles.colorGrid,
-                  { paddingHorizontal: responsiveValues.gridPadding },
-                ]}>
-                {walletBackgrounds.map((color) => (
-                  <Animated.View
-                    key={color}
-                    style={{
-                      transform: [{ scale: colorScaleAnims[color] || 1 }],
-                    }}>
-                    <Pressable
-                      style={[
-                        styles.colorOption,
-                        {
-                          backgroundColor: color,
-                          width: responsiveValues.itemSize,
-                          height: responsiveValues.itemSize,
-                          borderRadius: responsiveValues.itemSize / 4,
-                        },
-                        formData.background === color &&
-                          styles.colorOptionSelected,
-                      ]}
-                      onPress={() => handleColorSelect(color)}>
-                      {formData.background === color && (
-                        <Animated.View
-                          style={{
-                            transform: [{ scale: 1.2 }],
-                          }}>
-                          <Icon
-                            name="check"
-                            size={responsiveValues.isSmallScreen ? 14 : 16}
-                            color={COLORS.text}
-                          />
-                        </Animated.View>
-                      )}
-                    </Pressable>
-                  </Animated.View>
-                ))}
-              </View>
-            </View>
+            <ColorSelector
+              colors={walletBackgrounds}
+              selected={formData.background}
+              onSelect={handleColorSelect}
+              responsive={responsive}
+            />
 
             {/* Type Selector */}
-            <View
-              style={[
-                styles.typeSection,
-                { marginBottom: responsiveValues.sectionSpacing },
-              ]}>
-              <Text style={styles.fieldLabel}>Wallet Type</Text>
-              <View style={styles.typeContainer}>
-                {walletTypes.map((type) => {
-                  const info = getTypeMetadata(type);
-                  return (
-                    <Pressable
-                      key={type}
-                      style={[
-                        styles.typeOption,
-                        formData.type === type && styles.typeOptionSelected,
-                      ]}
-                      onPress={() => updateFormData("type", type)}>
-                      <Icon
-                        name={info.icon}
-                        size={20}
-                        color={
-                          formData.type === type
-                            ? COLORS.text
-                            : COLORS.textSecondary
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.typeLabel,
-                          formData.type === type && styles.typeLabelSelected,
-                        ]}>
-                        {info.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+            <TypeSelector
+              types={walletTypes}
+              selected={formData.type}
+              onSelect={(type) => updateFormData("type", type)}
+              responsive={responsive}
+            />
 
             {/* Input Fields */}
             <View style={styles.inputSection}>
@@ -599,10 +308,9 @@ const WalletModal = ({ visible, onClose, wallet = null, onWalletUpdated }) => {
         </ScrollView>
 
         {/* Submit Button */}
-        <View
-          style={[styles.footer, { padding: responsiveValues.contentPadding }]}>
+        <View style={[styles.footer, { padding: responsive.padding }]}>
           <Button
-            title={getSubmitText()}
+            title={submitText}
             onPress={handleSubmit}
             disabled={isSubmitting}
             style={styles.submitButton}
@@ -625,28 +333,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Preview
-  previewSection: {
-    marginBottom: 20,
-  },
-  previewContainer: {
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
   // Form sections
   formSection: {
     marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
-    marginBottom: 12,
-    textAlign: "center",
   },
   fieldLabel: {
     fontSize: 14,
@@ -654,81 +343,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 8,
     marginTop: 4,
-  },
-
-  // Icon and color grids
-  iconSection: {
-    marginBottom: 16,
-  },
-  iconGrid: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 4,
-  },
-  iconOption: {
-    backgroundColor: COLORS.input,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  iconOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.card,
-  },
-  colorSection: {
-    marginBottom: 16,
-  },
-  colorGrid: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 4,
-  },
-  colorOption: {
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  colorOptionSelected: {
-    borderColor: COLORS.text,
-    borderWidth: 3,
-  },
-
-  // Type selector
-  typeSection: {
-    marginBottom: 16,
-  },
-  typeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  typeOption: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.input,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  typeOptionSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.card,
-  },
-  typeLabel: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-    marginLeft: 6,
-  },
-  typeLabelSelected: {
-    color: COLORS.text,
-    fontWeight: "600",
   },
 
   // Inputs

@@ -21,8 +21,23 @@ export const useUsers = (shouldLoadUserData = false) => {
     },
   });
 
+  const useUserSettings = useQuery({
+    queryKey: ["userSettings"],
+    queryFn: () => apiService.get("/users/profile/settings"),
+  });
+
+  const updateUserSettings = useMutation({
+    mutationFn: (settingsData) =>
+      apiService.patch("/users/profile/settings", settingsData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userSettings"] });
+    },
+  });
+
   return {
     userProfile,
     updateUserProfile,
+    updateUserSettings,
+    useUserSettings,
   };
 };
